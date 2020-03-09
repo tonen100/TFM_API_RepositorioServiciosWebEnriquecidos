@@ -1,0 +1,22 @@
+{
+  "name": "tfm_api_repositorioservicioswebenriquecidos",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonen100/TFM_API_RepositorioServiciosWebEnriquecidos.git"
+  },
+  "author": "Pierre-François Giraud",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/tonen100/TFM_API_RepositorioServiciosWebEnriquecidos/issues"
+  },
+  "homepage": "https://github.com/tonen100/TFM_API_RepositorioServiciosWebEnriquecidos#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
