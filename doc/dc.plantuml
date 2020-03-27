@@ -1,0 +1,60 @@
+@startuml "DC APIs Repositorio"
+enum BusinessModel {
+    Free
+    FreeWithLimitations
+    FreeTrialVersion
+    FlatRateAllInclusive
+    FlatRatesWithLimitations
+    Billing
+}
+
+class Provider {
+    name: String
+    logo: Image
+    description: String
+    externalLinks: String[]
+}
+
+class RestApi {
+   title: String
+   logo: Image
+   businessModels: BusinessModel[]
+}
+
+class Version {
+    number: String // Semver
+    documentation: Object //OASv3
+    metadata: Object //WebAPI
+    deprecated: Boolean
+}
+
+class User {
+    username: String
+    email: String
+    password: String
+}
+
+class Explorer {
+    description: String
+    banned: Boolean
+}
+
+class Administrator {
+
+}
+
+class Contribution {
+    blacklisted: Boolean
+}
+
+RestApi *-right- "0..*" Version
+Provider o-right- "0..*" RestApi
+User <|-- Administrator
+User <|-- Explorer
+Administrator --> Contribution: Blacklist
+Administrator -left-> Explorer: Ban
+Explorer --> Contribution: Add, edit, delete
+Contribution <|-- Provider
+Contribution <|-- RestApi
+Contribution <|-- Version
+@enduml
