@@ -16,16 +16,18 @@ class Provider {
 }
 
 class RestApi {
-   title: String
+   name: String
    logo: Image
    businessModels: BusinessModel[]
 }
 
 class Version {
     number: String // Semver
-    documentation: Object //OASv3
+    description: String
+    originalDocumentation: String
+    oasDocumentation: Object //OASv3
     metadata: Object //WebAPI
-    deprecated: Boolean
+    deprecated: Boolean = false
 }
 
 class User {
@@ -36,15 +38,22 @@ class User {
 
 class Explorer {
     description: String
-    banned: Boolean
+    banned: Boolean = false
 }
 
 class Administrator {
 
 }
 
+class ContributionHistory {
+    contribution_id: String
+    date: DateTime
+    action: ['ADD', 'EDIT', 'DELETE']
+}
+
 class Contribution {
-    blacklisted: Boolean
+    blacklisted: Boolean = false
+    history: ContributionHistory
 }
 
 RestApi *-right- "0..*" Version
