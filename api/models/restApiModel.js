@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
 var mongodb = require('mongodb');
+var Schema = mongoose.Schema;
 var oas2SchemaOrg = require('oas2schema.org');
 User = require('./userModel');
 
@@ -14,6 +14,8 @@ User = require('./userModel');
  *          - number
  *          - description
  *        properties:
+ *          _id:
+ *            type: string
  *          number:
  *            type: string
  *            description: Number of release of the version. Advised to respect semver specification
@@ -36,19 +38,13 @@ User = require('./userModel');
  *          blackListed:
  *            type: boolean
  *            description: has this API version been blacklisted (if true, no operations (even GET) can be made on this ressource other than by an administrator)
- *          urlAPI:
- *            type: string
- *            pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
- *          urlDoc:
- *            type: string
- *            pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
  */
 var versionSchema = new Schema({
     number: {
         type: String,
         required: 'Enter the number of this API version please'
     }, originalDocumentation: {
-        type: String,
+        type: String
     }, oasDocumentation: {
         type: Object,
         required: 'Enter the OASv3 documentation of this API version please'
@@ -64,10 +60,8 @@ var versionSchema = new Schema({
     }, blackListed: {
         type: Boolean,
         default: false
-    }, contributor_id: {
-        type: mongodb.ObjectId
     }
-}, { strict: false, _id: false });
+}, { strict: false, id: false });
 mongoose.model('Versions', versionSchema);
 Versions = mongoose.model('Versions');
 
@@ -80,7 +74,10 @@ Versions = mongoose.model('Versions');
  *        type: object
  *        required:
  *          - name
+ *          - businessModels
  *        properties:
+ *          id:
+ *            type: string
  *          name:
  *            type: string
  *            description: API name
@@ -93,11 +90,17 @@ Versions = mongoose.model('Versions');
  *            type: string
  *            description: List of the type of offers available for consumers
  *            enum: ['Free', 'FreeWithLimitations', 'FreeTrialVersion', 'FlatRateAllInclusive', 'FlatRatesWithLimitations', 'Billing']
- *            example: 'descTrip'
  *          blackListed:
  *            type: boolean
  *            description: has this API been blacklisted (if true, no operations can be made on this ressource or subsequents rssources other than by an administrator)
  *            example: false
+ *          versions:
+ *            type: array
+ *            items:
+ *              type:
+ *                - $ref: '#/components/schemas/version'
+ *          provider_id:
+ *            type: string
  */
 var restApiSchema = new Schema({
     name: {
@@ -115,18 +118,18 @@ var restApiSchema = new Schema({
             'FlatRateAllInclusive',
             'FlatRatesWithLimitations',
             'Billing'
-        ],
+        ]
     }], blackListed: {
         type: Boolean,
         default: false
     }, versions: [
         versionSchema
-    ], contributor_id: {
-        type: mongodb.ObjectId
+    ], provider_id: {
+        type: mongodb.ObjectID,
     }
 }, { strict: true });
 
-versionSchema.pre('save', async function(callback) {
+versionSchema.pre('save', async (callback) => {
     var new_api = this;
 
     if(new_api.originalDocumentation) {
