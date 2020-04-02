@@ -36,7 +36,7 @@ class User {
     password: String
 }
 
-class Explorer {
+class Contributor {
     description: String
     banned: Boolean = false
 }
@@ -47,23 +47,25 @@ class Administrator {
 
 class ContributionHistory {
     contribution_id: String
+    contributor_id: String
     date: DateTime
     action: ['ADD', 'EDIT', 'DELETE']
+    typeContribution: ['Provider', 'RestAPI', 'Version']
 }
 
 class Contribution {
     blacklisted: Boolean = false
-    history: ContributionHistory
 }
 
 RestApi *-right- "0..*" Version
-Provider o-right- "0..*" RestApi
+Provider -right- "0..*" RestApi
 User <|-- Administrator
-User <|-- Explorer
+User <|-- Contributor
 Administrator --> Contribution: Blacklist
-Administrator -left-> Explorer: Ban
-Explorer --> Contribution: Add, edit, delete
+Administrator -left-> Contributor: Ban
+Contributor --> Contribution: Add, edit, delete
 Contribution <|-- Provider
 Contribution <|-- RestApi
 Contribution <|-- Version
+Contributor *-left- "0..*" ContributionHistory
 @enduml
