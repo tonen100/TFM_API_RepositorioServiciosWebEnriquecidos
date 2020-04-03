@@ -4,7 +4,7 @@ var routerv1 = express.Router();
 // var routerv2 = express.Router();
 
 module.exports = function(app) {
-    var usersv1 = require('../controllers/v1/userController');
+    var usersv1 = require('../controllers/userController');
 
     routerv1.route('/users')
         .get(usersv1.list_all_users)

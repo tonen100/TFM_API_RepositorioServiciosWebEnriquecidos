@@ -12,7 +12,7 @@
 
 var mongoose = require('mongoose')
 Providers = mongoose.model('Providers');
-restApiController = require('./restApiController');
+var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -48,7 +48,6 @@ exports.list_all_providers = function(req, res) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
-            providers.foreach(provider => delete provider.versions);
             res.json(providers);
         }
     })
@@ -121,6 +120,7 @@ exports.create_a_provider = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
             }
         } else {
+            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'ADD', 'Provider'); // TODO
             res.status(201).send(provider);
         }
     });
@@ -248,6 +248,7 @@ exports.edit_a_provider = function(req, res) {
                                 res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                             }
                         } else {
+                            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'EDIT', 'Provider'); // TODO
                             res.send(newProvider);
                         }
                     });
@@ -327,8 +328,8 @@ exports.handle_provider_blacklist = async function(req, res) {
                             console.error('Error getting data from DB');
                             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
                         } else {
-                            await restApis.foreach(async (restApi) => {
-                                restApi.versions.foreach(version => version.blacklisted = blacklisted);
+                            await restApis.forEach(async (restApi) => {
+                                restApi.versions.forEach(version => version.blacklisted = blacklisted);
                                 restApi.blacklisted = blacklisted;
                                 await restApi.save();
                             });
@@ -373,11 +374,12 @@ exports.handle_provider_blacklist = async function(req, res) {
 exports.delete_a_provider = function(req, res) {
     var id = req.params.providerId;
     var lang = dict.getLang(req);
-    Providers.findOneAndDelete({"_id": id}, null, function (err) {
+    Providers.findOneAndDelete({"_id": id}, null, function (err, provider) {
       if (err) {
         console.error('Error removing data from DB');
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
+        contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'DELETE', 'Provider', provider.name); // TODO
         res.sendStatus(204);
       }
     });

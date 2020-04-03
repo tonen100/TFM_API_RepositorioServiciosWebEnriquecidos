@@ -34,7 +34,7 @@ var bcrypt = require('bcrypt');
  *            type: boolean
  *          created_at:
  *            type: string
- *            format :date
+ *            format: date
  *          __v:
  *            type: integer
  */

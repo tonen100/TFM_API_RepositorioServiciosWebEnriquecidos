@@ -100,7 +100,7 @@ exports.list_all_users = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.create_an_user = function(req, res) {
+exports.create_a_user = function(req, res) {
     var new_user = new Users(req.body);
     var lang = dict.getLang(req);
     new_user.save(function(err, user) {
@@ -151,7 +151,7 @@ exports.create_an_user = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.read_an_user = function(req, res) {
+exports.read_a_user = function(req, res) {
     var id = req.params.userId;
     var lang = dict.getLang(req);
     Users.findById(id, function (err, user) {
@@ -212,7 +212,7 @@ exports.read_an_user = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.edit_an_user = function(req, res) {
+exports.edit_a_user = function(req, res) {
     var updatedUser = req.body;
     var id = req.params.userId;
     var lang = dict.getLang(req);
@@ -347,7 +347,7 @@ exports.handle_user_banishment = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.delete_an_user = function(req, res) {
+exports.delete_a_user = function(req, res) {
     var id = req.params.userId;
     var lang = dict.getLang(req);
     Users.findOneAndDelete({"_id": id}, null, function (err) {

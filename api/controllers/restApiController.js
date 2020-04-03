@@ -12,6 +12,7 @@
 
 var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
+var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -52,7 +53,7 @@ var dict = new LangDictionnary();
  *                allOf:
  *                - type: array
  *                  items:
- *                    $ref: '#/components/schemas/restApi'
+ *                    $ref: '#/components/schemas/restAPI'
  *        '500':
  *           description: Internal server error
  *           content: {}
@@ -67,7 +68,7 @@ exports.list_all_restApis = function(req, res) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
-            restApis.foreach(restApi => delete restApi.versions);
+            restApis.forEach(restApi => delete restApi.versions);
             res.json(restApis);
         }
     })
@@ -98,7 +99,7 @@ exports.list_all_restApis = function(req, res) {
  *                name:
  *                  type: string
  *                  example: 'Twitter API'
-*                 logo:
+ *                logo:
  *                  type: array
  *                  items:
  *                    type: string
@@ -114,7 +115,7 @@ exports.list_all_restApis = function(req, res) {
  *            application/json:
  *              schema:
  *                allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *        '422':
  *           description: Unprocesable entity
  *           content: {}
@@ -135,6 +136,7 @@ exports.create_a_restApi = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
             }
         } else {
+            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'ADD', 'RestAPI'); // TODO
             res.status(201).send(restApi);
         }
     });
@@ -165,7 +167,7 @@ exports.create_a_restApi = function(req, res) {
  *            application/json:
  *              schema:
  *                allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: RestApi not found
  *           content: {}
@@ -215,7 +217,7 @@ exports.read_a_restApi = function(req, res) {
  *          application/json:
  *            schema:
  *              allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *      responses:
  *        '200':
  *          description: Updated rest API
@@ -223,7 +225,7 @@ exports.read_a_restApi = function(req, res) {
  *            application/json:
  *              schema:
  *                allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: RestApi not found
  *           content: {}
@@ -262,6 +264,7 @@ exports.edit_a_restApi = function(req, res) {
                                 res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                             }
                         } else {
+                            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'EDIT', 'RestAPI'); // TODO
                             res.send(newRestApi); // return the updated restApi
                         }
                     });
@@ -311,7 +314,7 @@ exports.edit_a_restApi = function(req, res) {
  *            application/json:
  *              schema:
  *                allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: RestApi not found
  *           content: Not Found
@@ -330,14 +333,14 @@ exports.handle_restApi_blacklist = function(req, res) {
         console.warn("New PATCH request to /restApis/id/blacklist without correct attribute blacklisted, sending 422...");
         res.status(422).send({ err: dict.get('ErrorSchema', lang) });
     } else {
-        restApi.versions.foreach(version => version.blacklisted = blacklisted);
+        restApi.versions.forEach(version => version.blacklisted = blacklisted);
         RestApis.findById(id, function(err, restApi) {
             if (err) {
                 console.error('Error getting data from DB');
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
             } else {
                 if (restApi) {
-                    restApi.versions.foreach(version => version.blacklisted = blacklisted);
+                    restApi.versions.forEach(version => version.blacklisted = blacklisted);
                     restApi.blacklisted = blacklisted;
                     restApi.save((err2, newRestApi) => {
                         if (err2) {
@@ -387,7 +390,7 @@ exports.handle_restApi_blacklist = function(req, res) {
  *            application/json:
  *              schema:
  *                allOf:
- *                - $ref: '#/components/schemas/restApi'
+ *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: rest API or provider not found
  *           content: Not Found
@@ -413,6 +416,7 @@ exports.link_provider_to_api = function(req, res) {
                         res.send(restApi);
                     } else {
                         console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
+                        contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'EDIT', 'RestAPI'); // TODO
                         res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) });
                     }
                 }
@@ -453,9 +457,10 @@ exports.link_provider_to_api = function(req, res) {
 exports.delete_a_restApi = function(req, res) {
     var id = req.params.restApiId;
     var lang = dict.getLang(req);
-    RestApis.findOneAndDelete({"_id": id}, null, function (err) {
+    RestApis.findOneAndDelete({"_id": id}, null, function (err, restApi) {
       if (err) {
         console.error('Error removing data from DB');
+        contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'DELETE', 'RestAPI', restApi.name); // TODO
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
         res.sendStatus(204);

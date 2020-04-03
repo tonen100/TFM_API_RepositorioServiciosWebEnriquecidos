@@ -4,8 +4,8 @@ var routerv1 = express.Router();
 // var routerv2 = express.Router();
 
 module.exports = function(app) {
-    var restApisv1 = require('../controllers/v1/restApiController');
-    var versionsv1 = require('../controllers/v1/versionController');
+    var restApisv1 = require('../controllers/restApiController');
+    var versionsv1 = require('../controllers/versionController');
 
     routerv1.route('/restApis')
         .get(restApisv1.list_all_restApis)
@@ -20,13 +20,13 @@ module.exports = function(app) {
         .patch(restApisv1.link_provider_to_api)
     routerv1.route('restApis/:restApidId/version')
         .get(versionsv1.list_all_restApi_versions)
-        .post(restAversionsv1pisv1.create_a_restApi_version)
+        .post(versionsv1.create_a_restApi_version)
     routerv1.route('restApis/:restApidId/version/:versionId')
-        .get(versionsv1.read_a_restApi_versions)
+        .get(versionsv1.read_a_restApi_version)
         .put(versionsv1.edit_a_restApi_version)
         .delete(versionsv1.delete_a_restApi_version)
     routerv1.route('restApis/:restApidId/version/:versionId/blacklist')
-       .patch(versionsv1.handle_version_blacklist)
+       .patch(versionsv1.handle_restApi_version_blacklist)
 
     app.use("/v1", routerv1)
 

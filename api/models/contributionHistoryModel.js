@@ -6,11 +6,12 @@ var Schema = mongoose.Schema;
  * @swagger
  *  components:
  *    schemas:
- *      RestAPI:
+ *      contributionHistory:
  *        type: object
  *        required:
  *          - contribution_id
  *          - contributor_id
+ *          - action
  *          - typeContribution
  *        properties:
  *          id:
@@ -23,7 +24,10 @@ var Schema = mongoose.Schema;
  *              type: string
  *          date:
  *            type: string
- *            format :date
+ *            format: date
+ *          action:
+ *            type: boolean
+ *            enum: ['ADD', 'EDIT', 'DELETE']
  *          typeContribution:
  *            type: boolean
  *            enum: ['Provider', 'RestAPI', 'Version']
@@ -50,7 +54,9 @@ var contributionHistorySchema = new Schema({
             'Version'
         ],
         required: 'Enter the type of the contribution realised'
-    },
+    }, name:{
+        type: String
+    }
 }, { strict: true });
 
 module.exports = mongoose.model('ContributionsHistory', contributionHistorySchema);

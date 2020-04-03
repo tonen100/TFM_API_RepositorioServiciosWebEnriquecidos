@@ -4,7 +4,7 @@ var routerv1 = express.Router();
 // var routerv2 = express.Router();
 
 module.exports = function(app) {
-    var providersv1 = require('../controllers/v1/providerController');
+    var providersv1 = require('../controllers/providerController');
 
     routerv1.route('/providers')
         .get(providersv1.list_all_providers)

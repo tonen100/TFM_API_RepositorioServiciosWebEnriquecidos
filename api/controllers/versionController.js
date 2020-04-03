@@ -12,6 +12,8 @@
 
 var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
+Versions = mongoose.model('Versions');
+ContributionsHistory = mongoose.model('ContributionsHistory');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -47,7 +49,7 @@ var dict = new LangDictionnary();
  *           description: Internal server error
  *           content: {}
  */
-exports.list_all_versions = function(req, res) {
+exports.list_all_restApi_versions = function(req, res) {
     var lang = dict.getLang(req);
     var api_id = req.params.restApiId;
     RestApis.find({ "_id": api_id }, function(err, restApi) {
@@ -119,7 +121,7 @@ exports.list_all_versions = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.create_a_version = function(req, res) {
+exports.create_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var lang = dict.getLang(req);
     RestApis.findById(api_id, function (err, restApi) {
@@ -129,20 +131,30 @@ exports.create_a_version = function(req, res) {
         } else {
             if (restApi) {
                 if (!restApi.versions.find(version => version.number == req.body.number)) {
-                    restApi.versions.push(req.body);
-                    restApi.save(function(err2, newRestApi) {
+                    var newVersion = new Versions(req.body);
+                    newVersion.save((err2, version) => {
                         if(err2) {
-                            if(err2.name=='ValidationError') {
-                                res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                            }
-                            else{
-                                console.error('Error create data in DB');
-                                res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                            }
+                            console.error(dict.get('ErrorCreateDB', lang));
+                            res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                         } else {
-                            res.status(201).send(newRestApi.versions.find(version.number == req.body.number));
+                            restApi.versions.push(version);
+                            restApi.save(function(err3, newRestApi) {
+                                if(err3) {
+                                    if(err3.name=='ValidationError') {
+                                        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                                    }
+                                    else{
+                                        console.error('Error create data in DB');
+                                        res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
+                                    }
+                                } else {
+                                    ContributionsHistory.create_a_contributionHistory(version._id, version_id, 'ADD', 'Version'); // TODO
+                                    res.status(201).send(version);
+                                }
+                            });
                         }
                     });
+                    
                 } else {
                     res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, version.number) }); //TODO
                 }
@@ -193,7 +205,7 @@ exports.create_a_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.read_a_version = function(req, res) {
+exports.read_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
     var lang = dict.getLang(req);
@@ -267,7 +279,7 @@ exports.read_a_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.edit_a_version = function(req, res) {
+exports.edit_a_restApi_version = function(req, res) {
     var updatedVersion = req.body;
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
@@ -307,6 +319,7 @@ exports.edit_a_version = function(req, res) {
                                     res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                                 }
                             } else {
+                                ContributionsHistory.create_a_contributionHistory(id, id, 'EDIT', 'Version'); // TODO
                                 res.status(200).send(newRestApi.versions.find(version.number == req.body.number));
                             }
                         });
@@ -377,7 +390,7 @@ exports.edit_a_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.handle_version_blacklist = function(req, res) {
+exports.handle_restApi_version_blacklist = function(req, res) {
     var blacklisted = req.body ? req.body.blacklisted : undefined;
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
@@ -447,7 +460,7 @@ exports.handle_version_blacklist = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.delete_a_version = function(req, res) {
+exports.delete_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
     var lang = dict.getLang(req);
@@ -463,6 +476,8 @@ exports.delete_a_version = function(req, res) {
                         console.error('Error removing data from DB');
                         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
                     } else {
+                        ContributionsHistory.create_a_contributionHistory(id, id, 'DELETE', 'Version', restApi.name); // TODO
+                        Versions.findByIdAndDelete(id);
                         res.sendStatus(204);
                     }
                 });
@@ -471,13 +486,5 @@ exports.delete_a_version = function(req, res) {
                 res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
             }
         }
-    });
-    Versions.findOneAndDelete({"_id": id}, null, function (err) {
-      if (err) {
-        console.error('Error removing data from DB');
-        res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
-      } else {
-        res.sendStatus(204);
-      }
     });
 }

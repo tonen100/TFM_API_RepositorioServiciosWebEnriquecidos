@@ -1,13 +1,12 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 RestAPIs = require('./restApiModel');
-var mongodb = require('mongodb');
 
 /**
  * @swagger
  *  components:
  *    schemas:
- *      RestAPI:
+ *      provider:
  *        type: object
  *        required:
  *          - name
@@ -59,7 +58,7 @@ providerSchema.pre('deleteOne', async (callback) => {
     var providerId = this._conditions._id;
     await RestAPIs.find({ "provider_id": providerId }, (err, restApis) => {
         if(err) throw err;
-        restApis.foreach(restApi => RestAPIs.deleteOne({ "_id": restApi }));
+        restApis.forEach(restApi => RestAPIs.deleteOne({ "_id": restApi }));
     });
     callback();
 });

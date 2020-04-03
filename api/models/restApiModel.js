@@ -2,13 +2,12 @@ var mongoose = require('mongoose');
 var mongodb = require('mongodb');
 var Schema = mongoose.Schema;
 var oas2SchemaOrg = require('oas2schema.org');
-User = require('./userModel');
 
 /**
  * @swagger
  *  components:
  *    schemas:
- *      Version:
+ *      version:
  *        type: object
  *        required:
  *          - number
@@ -70,7 +69,7 @@ Versions = mongoose.model('Versions');
  * @swagger
  *  components:
  *    schemas:
- *      RestAPI:
+ *      restAPI:
  *        type: object
  *        required:
  *          - name
@@ -97,8 +96,7 @@ Versions = mongoose.model('Versions');
  *          versions:
  *            type: array
  *            items:
- *              type:
- *                - $ref: '#/components/schemas/version'
+ *              $ref: '#/components/schemas/version'
  *          provider_id:
  *            type: string
  */
@@ -161,4 +159,4 @@ restApiSchema.pre('deleteOne', async function(callback){
     callback();
 });
 
-module.exports = mongoose.model('RestAPIs', restApiSchema);
+module.exports = mongoose.model('RestApis', restApiSchema);
