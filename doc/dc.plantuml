@@ -45,16 +45,14 @@ class Administrator {
 
 }
 
+class Contribution {
+    blacklisted: Boolean = false
+}
+
 class ContributionHistory {
-    contribution_id: String
-    contributor_id: String
     date: DateTime
     action: ['ADD', 'EDIT', 'DELETE']
     typeContribution: ['Provider', 'RestAPI', 'Version']
-}
-
-class Contribution {
-    blacklisted: Boolean = false
 }
 
 RestApi *-right- "0..*" Version
@@ -62,10 +60,10 @@ Provider -right- "0..*" RestApi
 User <|-- Administrator
 User <|-- Contributor
 Administrator --> Contribution: Blacklist
-Administrator -left-> Contributor: Ban
-Contributor --> Contribution: Add, edit, delete
+Administrator -right-> Contributor: Ban
+(Contributor,Contribution) .. ContributionHistory: Add, edit, delete
 Contribution <|-- Provider
 Contribution <|-- RestApi
 Contribution <|-- Version
-Contributor *-left- "0..*" ContributionHistory
+
 @enduml
