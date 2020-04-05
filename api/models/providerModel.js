@@ -31,7 +31,7 @@ RestAPIs = require('./restApiModel');
  *              type: string
  *              pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
  *              description: external references (websites) to the provider (main website for example, or urls of distincts projects that are relevant in the topic of Web APIs)
- *          blackListed:
+ *          blacklisted:
  *            type: boolean
  *            description: has this provider been blacklisted (if true, no operations can be made on this ressource or subsequents rssources other than by an administrator)
  *            example: false
@@ -39,6 +39,7 @@ RestAPIs = require('./restApiModel');
 var providerSchema = new Schema({
     name: {
         type: String,
+        unique: true,
         required: 'Enter the name of the provider please'
     }, logo: {
         data: Buffer,
@@ -62,5 +63,7 @@ providerSchema.pre('deleteOne', async (callback) => {
     });
     callback();
 });
+
+providerSchema.index({ 'blacklisted': -1 });
 
 module.exports = mongoose.model('Providers', providerSchema);

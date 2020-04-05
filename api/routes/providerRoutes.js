@@ -13,7 +13,7 @@ module.exports = function(app) {
         .get(providersv1.read_a_provider)
         .put(providersv1.edit_a_provider)
         .delete(providersv1.delete_a_provider)
-    routerv1.route('providers/:providerdId/blacklist')
+    routerv1.route('/providers/:providerId/blacklist')
         .patch(providersv1.handle_provider_blacklist)
 
     app.use("/v1", routerv1)

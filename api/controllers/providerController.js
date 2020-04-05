@@ -44,7 +44,7 @@ var dict = new LangDictionnary();
  */
 exports.list_all_providers = function(req, res) {
     var lang = dict.getLang(req);
-    Providers.find({}, function(err, providers) {
+    Providers.find({ blacklisted: false }, function(err, providers) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {

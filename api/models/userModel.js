@@ -94,6 +94,7 @@ userModel.methods.verifyPassword = function(password, cb) {
         cb(null, isMatch);
     });
 };
-  
+
+userModel.index({ 'banned': -1 });
 
 module.exports = mongoose.model ('Users', userModel);

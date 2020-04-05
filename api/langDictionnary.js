@@ -138,7 +138,7 @@ const DEFAULT_ENTRIES = [
         values: [
             {
                 lang: 'en',
-                text: 'The API already use this version number'
+                text: number => 'The API already use the ' + number + ' version number'
             }, {
                 lang: 'es',
                 text: 'La API ya utiliza este numero de versión'

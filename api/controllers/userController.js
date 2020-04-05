@@ -43,7 +43,7 @@ var dict = new LangDictionnary();
  */
 exports.list_all_users = function(req, res) {
     var lang = dict.getLang(req);
-    Users.find({}, function(err, users) {
+    Users.find({ banned: false }, function(err, users) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {

@@ -1,7 +1,6 @@
 var mongoose = require('mongoose');
 var mongodb = require('mongodb');
 var Schema = mongoose.Schema;
-var oas2SchemaOrg = require('oas2schema.org');
 
 /**
  * @swagger
@@ -23,8 +22,8 @@ var oas2SchemaOrg = require('oas2schema.org');
  *            type: string
  *            description: The valid RESTfull API description made in any of the supported languages (OASv2, OASv3, RAMLv1, API Blueprint)
  *          oasDocumentation:
- *            type: object
- *            description: The API documentation in OASv3 format (can be generated from the originalDoumentation attribute)
+ *            type: string
+ *            description: The API documentation in OASv3 format (will be be generated from the originalDoumentation attribute)
  *          metadata:
  *            type: object
  *            description: The WebAPI instance of Schema.org generated from the oasDocumentation
@@ -34,36 +33,40 @@ var oas2SchemaOrg = require('oas2schema.org');
  *          deprecated:
  *            type: boolean
  *            description: has this version been deprecated
- *          blackListed:
+ *          blacklisted:
  *            type: boolean
  *            description: has this API version been blacklisted (if true, no operations (even GET) can be made on this ressource other than by an administrator)
+ *          createdAt:
+ *            type: string
+ *            format: date
  */
 var versionSchema = new Schema({
     number: {
         type: String,
         required: 'Enter the number of this API version please'
     }, originalDocumentation: {
-        type: String
+        type: String,
+        required: 'Enter the documentation of this API version please'
     }, oasDocumentation: {
-        type: Object,
-        required: 'Enter the OASv3 documentation of this API version please'
+        type: String,
     }, metadata: {
         type: Object,
-        required: 'Enter the metadata of this API version please'
     }, description: {
         type: String,
         required: 'Enter the description of this API version please'
     }, deprecated: {
         type: Boolean,
         default: false
-    }, blackListed: {
+    }, blacklisted: {
         type: Boolean,
         default: false
+    }, createdAt: {
+        type: Date,
+        default: Date.now
     }
-}, { strict: false, id: false });
+}, { strict: false });
 mongoose.model('Versions', versionSchema);
 Versions = mongoose.model('Versions');
-
 
 /**
  * @swagger
@@ -81,6 +84,8 @@ Versions = mongoose.model('Versions');
  *            type: string
  *            description: API name
  *            example: 'Twitter API'
+ *          metadata:
+ *              type: object          
  *          logo:
  *            type: array
  *            items:
@@ -89,7 +94,7 @@ Versions = mongoose.model('Versions');
  *            type: string
  *            description: List of the type of offers available for consumers
  *            enum: ['Free', 'FreeWithLimitations', 'FreeTrialVersion', 'FlatRateAllInclusive', 'FlatRatesWithLimitations', 'Billing']
- *          blackListed:
+ *          blacklisted:
  *            type: boolean
  *            description: has this API been blacklisted (if true, no operations can be made on this ressource or subsequents rssources other than by an administrator)
  *            example: false
@@ -103,7 +108,10 @@ Versions = mongoose.model('Versions');
 var restApiSchema = new Schema({
     name: {
         type: String,
+        unique: true,
         required: 'Enter the name of the API please'
+    }, metadata: {
+        type: Object
     }, logo: {
         data: Buffer,
         contentType: String
@@ -117,7 +125,7 @@ var restApiSchema = new Schema({
             'FlatRatesWithLimitations',
             'Billing'
         ]
-    }], blackListed: {
+    }], blacklisted: {
         type: Boolean,
         default: false
     }, versions: [
@@ -127,29 +135,6 @@ var restApiSchema = new Schema({
     }
 }, { strict: true });
 
-versionSchema.pre('save', async (callback) => {
-    var new_api = this;
-
-    if(new_api.originalDocumentation) {
-        try {
-            new_api.oasDocumentation = await oas2SchemaOrg.oasConverter.convertToOASv3(originalDocumentation)
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    if(new_api.oasDocumentation) {
-        try {
-            new_api.metadata = oas2SchemaOrg.convertToMetadata(new_api.oasDocumentation, "OASv3", { urlAPI: new_api.urlAPI, urlDoc: new_api.urlDoc });
-            delete new_api.urlAPI;
-            delete new_api.urlDoc;
-        } catch(err) {
-            console.log(err);
-        }
-    }
-    callback();
-});
-
 restApiSchema.pre('deleteOne', async function(callback){
     //Delete all object associated with this trip
     var restApiId = this._conditions._id;
@@ -158,5 +143,8 @@ restApiSchema.pre('deleteOne', async function(callback){
     });
     callback();
 });
+
+restApiSchema.index({ 'blacklisted': -1, 'provider_id': 1 });
+restApiSchema.index({ 'blacklisted': -1, 'business_models': 1, 'name': "text", 'description': "text" });
 
 module.exports = mongoose.model('RestApis', restApiSchema);

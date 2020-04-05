@@ -16,6 +16,10 @@ var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
+function getLastVersion(restAPI) {
+    return [restAPI.versions.sort((a, b) => b.createdAt - a.createdAt)[0]]
+}
+
  /**
  * @swagger
  * path:
@@ -27,6 +31,23 @@ var dict = new LangDictionnary();
  *        Retrieve all the rest API
  *      operationId: getRestApis
  *      parameters:
+ *        - name: page
+ *          in: query
+ *          description: page number of the results (starts at 0)
+ *          required: true
+ *          schema:
+ *            type: integer
+ *            min: 0
+ *            default: 0
+ *        - name: countPerPage
+ *          in: query
+ *          description: number of results by page
+ *          required: false
+ *          schema:
+ *            type: integer
+ *            min: 1
+ *            max: 20
+ *          example: 10
  *        - name: providerId
  *          in: query
  *          description: id of the provider who wanna search api for
@@ -58,20 +79,37 @@ var dict = new LangDictionnary();
  *           description: Internal server error
  *           content: {}
  */
-exports.list_all_restApis = function(req, res) {
+exports.list_all_restApis = async function(req, res) {
     var lang = dict.getLang(req);
-    var filters = {};
-    if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId
-    if(req.query.businessModels && typeof(req.query.businessModels) == 'object') filters.businessModels = req.query.businessModels //TODO
+    var page = req.query.page ? 0 : req.query.page;
+    var countPerPage = req.query.countPerPage ? 1 : req.query.countPerPage;
+    var page = Math.max(0, page);
+    var countPerPage = Math.min(Math.max(1, countPerPage), 20);
+    var filters = { blacklisted: false };
+
+    if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
     // if(req.query.query && typeof(req.query.query) == 'string') filters.provider_id = req.query.providerId // TODO
-    RestApis.find(filters, function(err, restApis) {
-        if(err) {
-            res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
+    try {
+        if(req.query.businessModels && typeof(req.query.businessModels) == 'string') {
+            
+                var businessModels = req.query.businessModels.split(',');
+                var restApis = await Promise.all(businessModels.map(async (businessModel) => {
+                    filters.businessModels = businessModel;
+                    restApisPartial = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
+                    restApisPartial.forEach(restApi => restApi.versions = getLastVersion(restApi));
+                    return restApisPartial;
+                }));
+                var seen = {}; // We flattern the arrays of arrays and remove duplicates
+                res.json(restApis.flat().filter(item => seen.hasOwnProperty(item._id) ? false : (seen[item._id] = true)));
+            
         } else {
+            var restApis = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
             restApis.forEach(restApi => delete restApi.versions);
             res.json(restApis);
         }
-    })
+    } catch (err) {
+        res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
+    }
 }
 
 /**
@@ -137,6 +175,7 @@ exports.create_a_restApi = function(req, res) {
             }
         } else {
             contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'ADD', 'RestAPI'); // TODO
+            restApi.versions = getLastVersion(restApi);
             res.status(201).send(restApi);
         }
     });
@@ -183,12 +222,13 @@ exports.read_a_restApi = function(req, res) {
           console.error('Error getting data from DB');
           res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
         } else {
-          if (restApi) {
-            res.send(restApi);
-          } else {
-            console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
-            res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
-          }
+            if (restApi) {
+                restApi.versions = getLastVersion(restApi);
+                res.send(restApi);
+            } else {
+                console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
+                res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
+            }
         }
       });
 }
@@ -265,6 +305,7 @@ exports.edit_a_restApi = function(req, res) {
                             }
                         } else {
                             contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'EDIT', 'RestAPI'); // TODO
+                            newRestApi.versions = getLastVersion(newRestApi);
                             res.send(newRestApi); // return the updated restApi
                         }
                     });
@@ -333,7 +374,6 @@ exports.handle_restApi_blacklist = function(req, res) {
         console.warn("New PATCH request to /restApis/id/blacklist without correct attribute blacklisted, sending 422...");
         res.status(422).send({ err: dict.get('ErrorSchema', lang) });
     } else {
-        restApi.versions.forEach(version => version.blacklisted = blacklisted);
         RestApis.findById(id, function(err, restApi) {
             if (err) {
                 console.error('Error getting data from DB');
@@ -347,6 +387,7 @@ exports.handle_restApi_blacklist = function(req, res) {
                             console.error('Error getting data from DB');
                             res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                         } else {
+                            newRestApi.versions = getLastVersion(newRestApi);
                             res.send(newRestApi);
                         }
                     });
@@ -402,7 +443,7 @@ exports.link_provider_to_api = function(req, res) {
     var id = req.params.restApiId;
     var provider_id = req.params.providerId;
     var lang = dict.getLang(req);
-    Providers.find({ "_id": provider_id }, (err, provider) => {
+    Providers.findById(provider_id, (err, provider) => {
         if (err) {
             console.error('Error getting data from DB');
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
@@ -413,6 +454,7 @@ exports.link_provider_to_api = function(req, res) {
                     res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
                 } else {
                     if (restApi) {
+                        restApi.versions = getLastVersion(restApi);
                         res.send(restApi);
                     } else {
                         console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));

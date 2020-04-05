@@ -40,7 +40,7 @@ mongoose.connect(mongoDBURI, {
 });
  
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '10mb'}));
 app.use(enable_cors());
 
 // admin.initializeApp({
