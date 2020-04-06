@@ -78,10 +78,10 @@ exports.list_all_providers = function(req, res) {
  *                  type: string
  *                  description: API name
  *                  example: 'Twitter API'
- *                logo:
- *                  type: array
- *                  items:
- *                    type: string
+ *                logoUrl:
+ *                  type: string
+ *                  pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
+ *                  description: Absolute URL to the logo of the provider
  *                description:
  *                  type: string
  *                  description: Provider description
@@ -235,7 +235,7 @@ exports.edit_a_provider = function(req, res) {
               } else {
                 if (provider) {
                     if(updatedProvider.name) provider.name = updatedProvider.name;
-                    if(updatedProvider.logo) provider.logo = updatedProvider.logo;
+                    if(updatedProvider.logoUrl) provider.logoUrl = updatedProvider.logoUrl;
                     if(updatedProvider.description) provider.description = updatedProvider.description;
                     if(updatedProvider.externalLinks) provider.externalLinks = updatedProvider.externalLinks;
                     provider.save(function(err2, newProvider) {
@@ -323,7 +323,7 @@ exports.handle_provider_blacklist = async function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
             } else {
                 if (provider) {
-                    RestAPIs.find({ "provider_id": providerId }, async (err2, restApis) => {
+                    RestAPIs.find({ "provider_id": id }, async (err2, restApis) => {
                         if(err2) {
                             console.error('Error getting data from DB');
                             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
@@ -379,7 +379,8 @@ exports.delete_a_provider = function(req, res) {
         console.error('Error removing data from DB');
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
-        contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'DELETE', 'Provider', provider.name); // TODO
+        if(provider)
+            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'DELETE', 'Provider', provider.name); // TODO
         res.sendStatus(204);
       }
     });

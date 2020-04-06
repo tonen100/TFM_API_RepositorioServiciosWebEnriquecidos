@@ -26,6 +26,7 @@
     "express": "^4.17.1",
     "jslint": "^0.12.1",
     "mongoose": "^5.9.6",
+    "node-cache": "^5.1.0",
     "oas2schema.org": "^1.0.0",
     "swagger-jsdoc": "^4.0.0",
     "swagger-ui-express": "^4.1.4"

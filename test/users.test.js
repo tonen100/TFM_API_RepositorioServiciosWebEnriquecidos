@@ -197,8 +197,8 @@ describe('Users Integration tests', () => {
         it('should return status code 204', done => {
             deleteByIdFunc(() => {}, res => {
                 expect(res).to.have.status(204)
-                // Verify that delete is idempotent
-                deleteByIdFunc(done, res => expect(res).to.have.status(204));
+                // Verify that delete is idempotent and that ressource is deleted
+                deleteByIdFunc(() => getByIdFunc(done, res => expect(res).to.have.status(404)), res => expect(res).to.have.status(204));
             });
         });
     });

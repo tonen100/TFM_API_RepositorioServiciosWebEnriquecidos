@@ -14,6 +14,8 @@ var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
 Versions = mongoose.model('Versions');
 var oas2SchemaOrg = require('oas2schema.org');
+var NodeCache = require( "node-cache" );
+var versionsCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
 
 var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
@@ -21,21 +23,15 @@ var dict = new LangDictionnary();
 
 function generateMetadata(version) {
     if(version.originalDocumentation) {
-        try {
-            return oas2SchemaOrg.oasConverter.convertToOASv3(version.originalDocumentation, oas2SchemaOrg.oasConverter.extractFormat(version.originalDocumentation)).then(oasDoc => {
-                version.oasDocumentation = JSON.stringify(oasDoc, null, '\t');
-                return oas2SchemaOrg.convertToMetadata(oasDoc, "OASv3", { urlAPI: version.urlAPI, urlDoc: version.urlDoc }).then(metadata => {
-                    version.metadata = metadata;
-
-                    delete version.urlAPI;
-                    delete version.urlDoc;
-                    return version;
-                })
-            })
-        } catch (err) {
-            console.log(err); //TODO
-            return version;
-        }
+        return oas2SchemaOrg.oasConverter.convertToOASv3(version.originalDocumentation, oas2SchemaOrg.oasConverter.extractFormat(version.originalDocumentation)).then(oasDoc => {
+            version.oasDocumentation = JSON.stringify(oasDoc, null, '\t');
+            return oas2SchemaOrg.convertToMetadata(oasDoc, 'OASv3', { urlAPI: version.urlAPI, urlDoc: version.urlDoc }).then(metadata => {
+                version.metadata = metadata;
+                delete version.urlAPI;
+                delete version.urlDoc;
+                return version;
+            });
+        });
     }
 }
 
@@ -72,24 +68,29 @@ function generateMetadata(version) {
  *           content: {}
  */
 exports.list_all_restApi_versions = function(req, res) {
-    var lang = dict.getLang(req);
+    var id = req.params.versionId;
     var api_id = req.params.restApiId;
-    RestApis.findById(api_id, function(err, restApi) {
-        if(err) {
-            console.error(dict.get('ErrorGetDB', lang))
-            res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
-        } else if (restApi) {
-            restApi.versions.filter(version => version.blacklisted == false).forEach(version => {
-                delete version.originalDocumentation;
-                delete version.oasDocumentation;
-                delete version.metadata;
-            })
-            res.json(restApi.versions);
-        } else {
-            console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
-            res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', api_id) });
-        }
-    })
+    var lang = dict.getLang(req);
+    if((cachedResponsed = versionsCache.get('list_all_restApi_versions:' + id)) != null) res.json(cachedResponsed);
+    else {
+        RestApis.findById(api_id, function(err, restApi) {
+            if(err) {
+                console.error(dict.get('ErrorGetDB', lang))
+                res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
+            } else if (restApi) {
+                restApi.versions.filter(version => version.blacklisted != false).forEach(version => {
+                    delete version.originalDocumentation;
+                    delete version.oasDocumentation;
+                    delete version.metadata;
+                })
+                res.json(restApi.versions);
+                versionsCache.set('list_all_restApi_versions:' + id, restApi.versions);
+            } else {
+                console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
+                res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', api_id) });
+            }
+        });
+    }
 }
 
 /**
@@ -163,36 +164,41 @@ exports.create_a_restApi_version = function(req, res) {
             if (restApi) {
                 if (!restApi.versions.find(version => version.number == req.body.number)) {
                     var newVersion = new Versions(req.body);
-                    newVersion = await generateMetadata(newVersion);
-                    newVersion.save((err2, version) => {
-                        if(err2) {
-                            if(err2.name=='ValidationError') {
-                                res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                            } else {
-                                console.error(dict.get('ErrorCreateDB', lang));
-                                res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                            }
-                        } else {
-                            restApi.metadata = version.metadata;
-                            restApi.versions.push(version);
-                            restApi.save(function(err3, newRestApi) {
-                                if(err3) {
-                                    if(err3.name=='ValidationError') {
-                                        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                                    }
-                                    else{
-                                        console.error('Error create data in DB');
-                                        //res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                                    }
+                    try {
+                        newVersion = await generateMetadata(newVersion);
+                        newVersion.save((err2, version) => {
+                            if(err2) {
+                                if(err2.name=='ValidationError') {
+                                    res.status(422).send({ err: dict.get('ErrorSchema', lang) });
                                 } else {
-                                    contributionsHistory.create_a_contributionHistory(version._id, version._id, 'ADD', 'Version'); // TODO
-                                    res.status(201).send(version);
+                                    console.error(dict.get('ErrorCreateDB', lang));
+                                    res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                                 }
-                            });
-                        }
-                    });
+                            } else {
+                                restApi.metadata = version.metadata;
+                                restApi.versions.push(version);
+                                restApi.save(function(err3, newRestApi) {
+                                    if(err3) {
+                                        if(err3.name=='ValidationError') {
+                                            res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                                        }
+                                        else{
+                                            console.error('Error create data in DB');
+                                            res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
+                                        }
+                                    } else {
+                                        contributionsHistory.create_a_contributionHistory(version._id, version._id, 'ADD', 'Version'); // TODO
+                                        res.status(201).send(version);
+                                    }
+                                });
+                            }
+                        });
+                    } catch(errGenerate) {
+                        if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
+                        else res.status(422).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
+                    }
                 } else {
-                    res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, req.body.number) }); //TODO
+                    res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, req.body.number) });
                 }
             } else {
                 console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
@@ -245,6 +251,7 @@ exports.read_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
     var lang = dict.getLang(req);
+
     RestApis.findById(api_id, function (err, restApi) {
         if (err) {
           console.error('Error getting data from DB');
@@ -509,13 +516,14 @@ exports.delete_a_restApi_version = function(req, res) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
           } else {
             if (restApi) {
-                restApi.versions = restApi.versions.filter(_version => _version._id == id);
+                if(restApi.versions.find(_version => _version._id == id))
+                    contributionsHistory.create_a_contributionHistory(id, id, 'DELETE', 'Version', restApi.name); // TODO
+                restApi.versions = restApi.versions.filter(_version => _version._id != id);
                 restApi.save(function(err2, _) {
                     if(err2) {
                         console.error('Error removing data from DB');
                         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
                     } else {
-                        contributionsHistory.create_a_contributionHistory(id, id, 'DELETE', 'Version', restApi.name); // TODO
                         Versions.findByIdAndDelete(id);
                         res.sendStatus(204);
                     }

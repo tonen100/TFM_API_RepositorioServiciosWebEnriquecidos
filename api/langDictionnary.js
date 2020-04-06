@@ -141,7 +141,29 @@ const DEFAULT_ENTRIES = [
                 text: number => 'The API already use the ' + number + ' version number'
             }, {
                 lang: 'es',
-                text: 'La API ya utiliza este numero de versión'
+                text: number =>  'La API ya utiliza el numero de versión ' + number
+            },
+        ]
+    }, {
+        id: 'ErrorDocumentationInvalid',
+        values: [
+            {
+                lang: 'en',
+                text: errMessage => 'The documentation of the API is invalid for the following reason' + errMessage
+            }, {
+                lang: 'es',
+                text: errMessage => 'La documentacion de la API es incorrecta por la razon siguiente: ' + errMessage
+            },
+        ]
+    }, {
+        id: 'ErrorConvertToMetadataFailed',
+        values: [
+            {
+                lang: 'en',
+                text: errMessage => 'The metadata extraction on the documentation of the API has failed for the following reason: ' + errMessage
+            }, {
+                lang: 'es',
+                text: errMessage => 'La extracción de metadatos de la documentación de la API ha fallado por la razón siguiente: ' + errMessage
             },
         ]
     }

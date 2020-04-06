@@ -10,14 +10,14 @@ enum BusinessModel {
 
 class Provider {
     name: String
-    logo: Image
+    logoUrl: Image
     description: String
     externalLinks: String[]
 }
 
 class RestApi {
    name: String
-   logo: Image
+   logoUrl: Image
    businessModels: BusinessModel[]
 }
 

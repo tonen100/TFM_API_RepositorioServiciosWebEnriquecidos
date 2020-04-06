@@ -107,7 +107,7 @@ describe('RestApis Versions Integration tests', () => {
                                 .post('/v1/restApis')
                                 .send({
                                     "name": "Twitter",
-                                    "logo": ["example", "string", "array"],
+                                    "logoUrl": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c8/Twitter_Bird.svg/1200px-Twitter_Bird.svg.png",
                                     "provider_id": providerId,
                                     "businessModels": ["Free"]
                                 })
@@ -126,7 +126,7 @@ describe('RestApis Versions Integration tests', () => {
         });
     });
 
-    before(done => {
+    beforeEach(done => {
         chai
             .request(app)
             .post('/v1/restApis/' + restApiId + '/versions/')
@@ -236,8 +236,8 @@ describe('RestApis Versions Integration tests', () => {
         it('should return status code 204', done => {
             deleteByIdFunc(() => {}, res => {
                 expect(res).to.have.status(204)
-                // Verify that delete is idempotent
-                deleteByIdFunc(done, res => expect(res).to.have.status(204));
+                // Verify that delete is idempotent and that ressource is deleted
+                deleteByIdFunc(() => getByIdFunc(done, res => expect(res).to.have.status(404)), res => expect(res).to.have.status(204));
             });
         });
     });

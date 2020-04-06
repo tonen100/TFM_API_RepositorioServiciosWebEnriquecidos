@@ -86,10 +86,10 @@ Versions = mongoose.model('Versions');
  *            example: 'Twitter API'
  *          metadata:
  *              type: object          
- *          logo:
- *            type: array
- *            items:
- *              type: string
+ *          logoUrl:
+ *            type: string
+ *            pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
+ *            description: Absolute URL to the logo of the API
  *          businessModels:
  *            type: string
  *            description: List of the type of offers available for consumers
@@ -112,9 +112,8 @@ var restApiSchema = new Schema({
         required: 'Enter the name of the API please'
     }, metadata: {
         type: Object
-    }, logo: {
-        data: Buffer,
-        contentType: String
+    }, logoUrl: {
+        type: String
     }, businessModels: [{
         type: String,
         enum: [

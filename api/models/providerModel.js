@@ -17,10 +17,10 @@ RestAPIs = require('./restApiModel');
  *            type: string
  *            description: API name
  *            example: 'Twitter API'
- *          logo:
- *            type: array
- *            items:
- *              type: string
+ *          logoUrl:
+ *            type: string
+ *            pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
+ *            description: Absolute URL to the logo of the provider
  *          description:
  *            type: string
  *            description: Provider description
@@ -41,9 +41,8 @@ var providerSchema = new Schema({
         type: String,
         unique: true,
         required: 'Enter the name of the provider please'
-    }, logo: {
-        data: Buffer,
-        contentType: String
+    }, logoUrl: {
+        type: String
     }, description: {
         type: String
     }, externalLinks: [{

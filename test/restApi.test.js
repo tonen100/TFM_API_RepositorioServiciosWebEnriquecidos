@@ -157,7 +157,7 @@ describe('RestApis Integration tests', () => {
     beforeEach(done => {
         postFunc({
             "name": "Twitter",
-            "logo": ["example", "string", "array"],
+            "logoUrl": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c8/Twitter_Bird.svg/1200px-Twitter_Bird.svg.png",
             "provider_id": providerId,
             "businessModels": ["Free"]
         }, (res) => {
@@ -189,7 +189,7 @@ describe('RestApis Integration tests', () => {
         it('should return the right restApis filtered by provider', done => {
             postFunc({
                 "name": "Facebook",
-                "logo": ["example", "string", "array"],
+                "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Facebook_logo_36x36.svg/1200px-Facebook_logo_36x36.svg.png",
                 "provider_id": provider2Id,
                 "businessModels": ["Free"]
             }, (res2) => getAllFunc(() => {}, res => {
@@ -201,7 +201,7 @@ describe('RestApis Integration tests', () => {
         it('should return the right restApis filtered by business model', done => {
             postFunc({
                 "name": "AWS Security Hub",
-                "logo": ["example", "string", "array"],
+                "logoUrl": "https://d0.awsstatic.com/security-center/AWSSecurity.jpg",
                 "provider_id": provider2Id,
                 "businessModels": ["Billing"]
             }, (res2) => getAllFunc(() => {}, res => {
@@ -213,7 +213,7 @@ describe('RestApis Integration tests', () => {
         it('should return the right restApis filtered by various business models', done => {
             postFunc({
                 "name": "AWS Security Hub",
-                "logo": ["example", "string", "array"],
+                "logoUrl": "https://d0.awsstatic.com/security-center/AWSSecurity.jpg",
                 "provider_id": provider2Id,
                 "businessModels": ["Free", "FreeTrialVersion", "Billing"]
             }, (res2) => getAllFunc(() => {}, res => {
@@ -300,8 +300,8 @@ describe('RestApis Integration tests', () => {
         it('should return status code 204', done => {
             deleteByIdFunc(() => {}, restApiId, res => {
                 expect(res).to.have.status(204)
-                // Verify that delete is idempotent
-                deleteByIdFunc(done, restApiId, res => expect(res).to.have.status(204));
+                // Verify that delete is idempotent and that ressource is deleted
+                deleteByIdFunc(() => getByIdFunc(done, res => expect(res).to.have.status(404)), restApiId, res => expect(res).to.have.status(204));
             });
         });
     });

@@ -12,6 +12,9 @@
 
 var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
+var NodeCache = require( "node-cache" );
+var restApisCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
+
 var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
@@ -86,13 +89,14 @@ exports.list_all_restApis = async function(req, res) {
     var page = Math.max(0, page);
     var countPerPage = Math.min(Math.max(1, countPerPage), 20);
     var filters = { blacklisted: false };
-
     if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
     // if(req.query.query && typeof(req.query.query) == 'string') filters.provider_id = req.query.providerId // TODO
-    try {
-        if(req.query.businessModels && typeof(req.query.businessModels) == 'string') {
-            
-                var businessModels = req.query.businessModels.split(',');
+    if(req.query.businessModels && typeof(req.query.businessModels) == 'string') filters.businessModels = req.query.businessModels.split(',').sort((a, b) => ('' + a).localeCompare(b));
+    if((cachedResponsed = restApisCache.get(JSON.stringify(filters))) != null) res.json(cachedResponsed);
+    else {
+        try {
+            if(req.query.businessModels && typeof(req.query.businessModels) == 'string') {
+                var businessModels = filters.businessModels;
                 var restApis = await Promise.all(businessModels.map(async (businessModel) => {
                     filters.businessModels = businessModel;
                     restApisPartial = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
@@ -101,14 +105,17 @@ exports.list_all_restApis = async function(req, res) {
                 }));
                 var seen = {}; // We flattern the arrays of arrays and remove duplicates
                 res.json(restApis.flat().filter(item => seen.hasOwnProperty(item._id) ? false : (seen[item._id] = true)));
-            
-        } else {
-            var restApis = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
-            restApis.forEach(restApi => delete restApi.versions);
-            res.json(restApis);
+                filters.businessModels = businessModels;
+                restApisCache.set(JSON.stringify(filters), restApis);
+            } else {
+                var restApis = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
+                restApis.forEach(restApi => delete restApi.versions);
+                res.json(restApis);
+                restApisCache.set(JSON.stringify(filters), restApis);
+            }
+        } catch (err) {
+            res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         }
-    } catch (err) {
-        res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
     }
 }
 
@@ -137,10 +144,10 @@ exports.list_all_restApis = async function(req, res) {
  *                name:
  *                  type: string
  *                  example: 'Twitter API'
- *                logo:
- *                  type: array
- *                  items:
- *                    type: string
+ *                logoUrl:
+ *                  type: string
+ *                  pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
+ *                  description: Absolute URL to the logo of the API
  *                businessModels:
  *                  type: string
  *                  description: List of the type of offers available for consumers
@@ -217,6 +224,8 @@ exports.create_a_restApi = function(req, res) {
 exports.read_a_restApi = function(req, res) {
     var id = req.params.restApiId;
     var lang = dict.getLang(req);
+    if((cachedResponsed = restApisCache.get('read_a_restApi:' + id)) != null) res.json(cachedResponsed);
+
     RestApis.findById(id, function (err, restApi) {
         if (err) {
           console.error('Error getting data from DB');
@@ -225,6 +234,7 @@ exports.read_a_restApi = function(req, res) {
             if (restApi) {
                 restApi.versions = getLastVersion(restApi);
                 res.send(restApi);
+                restApisCache.set(JSON.stringify('read_a_restApi:' + id), restApi);
             } else {
                 console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
                 res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
@@ -291,7 +301,7 @@ exports.edit_a_restApi = function(req, res) {
               } else {
                 if (restApi) {
                     if(updatedRestApi.name) restApi.name = updatedRestApi.name;
-                    if(updatedRestApi.logo) restApi.logo = updatedRestApi.logo;
+                    if(updatedRestApi.logoUrl) restApi.logoUrl = updatedRestApi.logoUrl;
                     if(updatedRestApi.description) restApi.description = updatedRestApi.description;
                     if(updatedRestApi.businessModels) restApi.businessModels = updatedRestApi.businessModels;
                     restApi.save(function(err2, newRestApi) {
@@ -502,9 +512,10 @@ exports.delete_a_restApi = function(req, res) {
     RestApis.findOneAndDelete({"_id": id}, null, function (err, restApi) {
       if (err) {
         console.error('Error removing data from DB');
-        contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'DELETE', 'RestAPI', restApi.name); // TODO
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
+        if(restApi)
+            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'DELETE', 'RestAPI', restApi.name); // TODO
         res.sendStatus(204);
       }
     });
