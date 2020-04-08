@@ -13,9 +13,10 @@
 var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
 var NodeCache = require( "node-cache" );
-var restApisCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
+var restApisCache = new NodeCache( { stdTTL: 600, checkperiod: 60, useClones: true } );
 
 var contributionsHistory = require('./contributionHistoryController');
+var documentClassifier = require('../documentClassifier');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -42,15 +43,10 @@ function getLastVersion(restAPI) {
  *            type: integer
  *            min: 0
  *            default: 0
- *        - name: countPerPage
+ *        - name: keywords
  *          in: query
- *          description: number of results by page
+ *          description: keywords of the search (use matching score based algorithm on APIs metadata to filter with this parameter)
  *          required: false
- *          schema:
- *            type: integer
- *            min: 1
- *            max: 20
- *          example: 10
  *        - name: providerId
  *          in: query
  *          description: id of the provider who wanna search api for
@@ -84,35 +80,55 @@ function getLastVersion(restAPI) {
  */
 exports.list_all_restApis = async function(req, res) {
     var lang = dict.getLang(req);
-    var page = req.query.page ? 0 : req.query.page;
-    var countPerPage = req.query.countPerPage ? 1 : req.query.countPerPage;
-    var page = Math.max(0, page);
-    var countPerPage = Math.min(Math.max(1, countPerPage), 20);
+    var page = req.query.page ? req.query.page : 0;
+    var countPerPage = 10;
+    page = Math.max(0, page);
     var filters = { blacklisted: false };
+    var keywords = null;
+    var restApis;
+    
     if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
-    // if(req.query.query && typeof(req.query.query) == 'string') filters.provider_id = req.query.providerId // TODO
+    if(req.query.keywords && typeof(req.query.keywords) == 'string') {
+        keywords = req.query.keywords.toLowerCase();
+        keywords = documentClassifier.remove_stop_words(keywords);
+        keywords = documentClassifier.remove_punctuation(keywords);
+        filters["$or"] = [];
+        keywords.split(' ').forEach(keyword => filters["$or"].push(
+            { 'name': new RegExp(keyword, 'i')},
+            { 'metadata.name': new RegExp(keyword, 'i')},
+            { 'metadata.category': new RegExp(keyword, 'i')},
+            { 'metadata.brand.name': new RegExp(keyword, 'i')},
+            { 'metadata.description': new RegExp(keyword, 'i')}
+        ));
+    }
     if(req.query.businessModels && typeof(req.query.businessModels) == 'string') filters.businessModels = req.query.businessModels.split(',').sort((a, b) => ('' + a).localeCompare(b));
     if((cachedResponsed = restApisCache.get(JSON.stringify(filters))) != null) res.json(cachedResponsed);
     else {
         try {
             if(req.query.businessModels && typeof(req.query.businessModels) == 'string') {
                 var businessModels = filters.businessModels;
-                var restApis = await Promise.all(businessModels.map(async (businessModel) => {
+                restApis = await Promise.all(businessModels.map(async (businessModel) => {
                     filters.businessModels = businessModel;
-                    restApisPartial = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
-                    restApisPartial.forEach(restApi => restApi.versions = getLastVersion(restApi));
+                    if(keywords)
+                        restApisPartial = await RestApis.find(filters, { versions: 0 });
+                    else
+                        restApisPartial = await RestApis.find(filters, { versions: 0 }).skip(page * countPerPage).limit(countPerPage);
                     return restApisPartial;
                 }));
                 var seen = {}; // We flattern the arrays of arrays and remove duplicates
-                res.json(restApis.flat().filter(item => seen.hasOwnProperty(item._id) ? false : (seen[item._id] = true)));
+                restApis = restApis.flat().filter(item => seen.hasOwnProperty(item._id) ? false : (seen[item._id] = true));
                 filters.businessModels = businessModels;
-                restApisCache.set(JSON.stringify(filters), restApis);
             } else {
-                var restApis = await RestApis.find(filters).skip(page * countPerPage).limit(countPerPage);
-                restApis.forEach(restApi => delete restApi.versions);
-                res.json(restApis);
-                restApisCache.set(JSON.stringify(filters), restApis);
+                if(keywords)
+                    restApis = await RestApis.find(filters, { versions: 0 });
+                else
+                    restApis = await RestApis.find(filters, { versions: 0 }).skip(page * countPerPage).limit(countPerPage);
             }
+            if(keywords)
+                restApis = documentClassifier.rankRestApis(keywords, restApis.filter(restApi => restApi.metadata != null)).slice(page * countPerPage, page * countPerPage + countPerPage);
+            res.json(restApis);
+            filters.page = page;
+            restApisCache.set(JSON.stringify(filters), restApis);
         } catch (err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         }

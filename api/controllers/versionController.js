@@ -5,7 +5,7 @@
 * Authors: 
 * Pierre-François Giraud
 * 
-* Universidad de Sevilla 
+* Universidad de Sevilla
 * 2019-20
 * 
 */

@@ -1,6 +1,7 @@
 const app = require("../index");
 const chai = require("chai");
 const chaiHttp = require("chai-http");
+const fs = require('fs');
 var mongoose = require('mongoose'),
 RestApis = mongoose.model('RestApis');
 
@@ -13,13 +14,14 @@ describe('RestApis Integration tests', () => {
     var provider2Id;
     var resPost;
 
-    var getAllFunc = (done, callback, providerId, businessModels) => chai
+    var getAllFunc = (done, callback, providerId, businessModels, keywords) => chai
         .request(app)
         .get('/v1/restApis' +
-            ((providerId || businessModels) ? "?" : "") +
+            ((providerId || businessModels || keywords) ? "?" : "") +
             (providerId ? "providerId=" + providerId : "") +
             (providerId && businessModels ? "&" : "") +
-            (businessModels ? "businessModels=" + businessModels.map(bm => bm).join(",") : ""))
+            (businessModels ? "businessModels=" + businessModels.map(bm => bm).join(",") : "") +
+            (keywords ? "keywords=" + keywords : ""))
         .send()
         .end((err, res) => {
             if (err) {
@@ -222,6 +224,53 @@ describe('RestApis Integration tests', () => {
                 expect(res.body.find(restApi => restApi.name == ("AWS Security Hub"))).to.not.be.null;
                 deleteByIdFunc(done, res2.body._id, (res) => {});
             }, null, ["Free", "Billing"]));
+        });
+        it('should return the right restApis filtered by keywords', done => {
+            postFunc({
+                "name": "AWS Security Hub",
+                "provider_id": provider2Id,
+                "businessModels": ["Billing"]
+            }, (res3) => postFunc({
+                "name": "AWS Migration Hub",
+                "provider_id": provider2Id,
+                "businessModels": ["Billing"]
+            }, (res2) => chai
+                .request(app)
+                .post('/v1/restApis/' + res3.body._id + '/versions/')
+                .send({
+                    "number": "v1.0.0",
+                    "originalDocumentation": fs.readFileSync('test/ressources/AWSSecurityHub-oas.json').toString(),
+                    "description": "1rst version of AWS Security"
+                })
+                .end((err5, res5) => {
+                    if (err5) {
+                        done(err5);
+                    } 
+                    else {
+                        chai
+                        .request(app)
+                        .post('/v1/restApis/' + res2.body._id + '/versions/')
+                        .send({
+                            "number": "v1.0.0",
+                            "originalDocumentation": fs.readFileSync('test/ressources/AWSMigrationHub-oas.json').toString(),
+                            "description": "1rst version of AWS Migration"
+                        })
+                        .end((err4, res4) => {
+                            if (err4) {
+                                done(err4);
+                            } 
+                            else {
+                                getAllFunc(() => {}, res => {
+                                    expect(res.body.length).to.eql(2);
+                                    expect(res.body[0].name).to.eql("AWS Migration Hub");
+                                    expect(res.body[1].name).to.eql("AWS Security Hub");
+                                    deleteByIdFunc(done, res2.body._id, (res) => deleteByIdFunc(() => {}, res3.body._id, () => {}));
+                                }, null, null, "AWS Migration");
+                            }
+                        });
+                    }
+                })
+            ));
         });
     });
 
