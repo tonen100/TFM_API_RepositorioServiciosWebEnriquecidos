@@ -1,8 +1,17 @@
 const app = require("../index");
 const chai = require("chai");
 const chaiHttp = require("chai-http");
+const sinon = require('sinon');
 var mongoose = require('mongoose'),
+Users = mongoose.model('Users'),
 Providers = mongoose.model('Providers');
+
+var admin = require('firebase-admin');
+sinon.stub(admin.auth(), "verifyIdToken").callsFake(() => { 
+    return {
+        uid: 'admin@test.com'
+    }
+});
 
 const { expect } = chai;
 chai.use(chaiHttp);
@@ -10,10 +19,12 @@ chai.use(chaiHttp);
 describe('Providers Integration tests', () => {
     var providerId;
     var resPost;
+    var firebaseFakeToken = "token";
 
     var getAllFunc = (done, callback) => chai
         .request(app)
         .get('/v1/providers')
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -29,6 +40,7 @@ describe('Providers Integration tests', () => {
         chai
         .request(app)
         .get('/v1/providers/' + providerId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -44,6 +56,7 @@ describe('Providers Integration tests', () => {
         chai
         .request(app)
         .put('/v1/providers/' + providerId)
+        .set('authorization', firebaseFakeToken)
         .send(newProvider)
         .end((err, res) => {
             if (err) {
@@ -59,6 +72,7 @@ describe('Providers Integration tests', () => {
         chai
         .request(app)
         .patch('/v1/providers/' + providerId + '/blacklist')
+        .set('authorization', firebaseFakeToken)
         .send(patch)
         .end((err, res) => {
             if (err) {
@@ -74,6 +88,7 @@ describe('Providers Integration tests', () => {
         chai
         .request(app)
         .delete('/v1/providers/' + provider_id)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -100,10 +115,11 @@ describe('Providers Integration tests', () => {
         chai
             .request(app)
             .post('/v1/providers')
+            .set('authorization', firebaseFakeToken)
             .send(obj)
             .end((err, res) => {
                 if (err) {
-                    done(err);
+                    console.error(err)
                 } 
                 else {
                     callback(res)

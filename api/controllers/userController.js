@@ -12,8 +12,10 @@
 
 var mongoose = require('mongoose')
 Users = mongoose.model('Users');
+var admin = require('firebase-admin');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
+var auth = require('./authController')
 
  /**
  * @swagger
@@ -43,7 +45,7 @@ var dict = new LangDictionnary();
  */
 exports.list_all_users = function(req, res) {
     var lang = dict.getLang(req);
-    Users.find({ banned: false }, function(err, users) {
+    Users.find({ banned: false }, { password: 0 }, function(err, users) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
@@ -60,7 +62,74 @@ exports.list_all_users = function(req, res) {
  *      tags:
  *        - User
  *      description: >-
- *        Create a new user
+ *        Create a new user (only contributors)
+ *      operationId: postContributor
+ *      parameters:
+ *        - $ref: '#/components/parameters/language'
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              required:
+ *                - username
+ *                - email
+ *                - password
+ *              properties:
+ *                username:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                password:
+ *                  type: string
+ *      responses:
+ *        '201':
+ *          description: Created
+ *          content:
+ *            application/json:
+ *              schema:
+ *                allOf:
+ *                - $ref: '#/components/schemas/user'
+ *        '422':
+ *           description: Unprocesable entity
+ *           content: {}
+ *        '500':
+ *           description: Internal server error
+ *           content: {}
+ */
+exports.create_a_contributor = function(req, res) {
+    var new_user = new Users(req.body);
+    var lang = dict.getLang(req);
+    if(new_user.role == 'Administrator') {
+        res.status(403).send({ err: dict.get('Forbidden', lang) });
+    } else {
+        new_user.save(function(err, user) {
+            if(err) {
+                console.error(err);
+                if(err.name=='ValidationError') {
+                    res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                }
+                else{
+                    console.error('Error create data in DB');
+                    res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
+                }
+            } else {
+                res.status(201).send(user);
+            }
+        });
+    }
+}
+
+/**
+ * @swagger
+ * path:
+ *  '/users/admin':
+ *    post:
+ *      tags:
+ *        - User
+ *      description: >-
+ *        Create a new user (any type). Need administrator privileges
  *      operationId: postUsers
  *      parameters:
  *        - $ref: '#/components/parameters/language'
@@ -154,7 +223,7 @@ exports.create_a_user = function(req, res) {
 exports.read_a_user = function(req, res) {
     var id = req.params.userId;
     var lang = dict.getLang(req);
-    Users.findById(id, function (err, user) {
+    Users.findById(id, { password: 0 }, function (err, user) {
         if (err) {
           console.error('Error getting data from DB');
           res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
@@ -212,18 +281,21 @@ exports.read_a_user = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.edit_a_user = function(req, res) {
+exports.edit_a_user = async function(req, res) {
     var updatedUser = req.body;
     var id = req.params.userId;
     var lang = dict.getLang(req);
-    if (!updatedUser) {
+    var token = req.headers['authorization'];
+    if(id != await auth.getUserId(token)) {
+        res.status(401).send({ err: dict.get('Unauthorized', lang) });
+    } else if (!updatedUser) {
         console.warn("New PUT request to /users/ without user, sending 400...");
-        res.status(422).send({ err: dict.get('ErrorSchema', lang) }); // bad request
+        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
     } else {
-        Users.findById(id, function(err, user) {
+        Users.findById(id, { password: 0 }, function(err, user) {
             if (err) {
                 console.error('Error getting data from DB');
-                res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
+                res.status(500).send({ err: dict.get('ErrorGetDB', lang) }) // internal server error
               } else {
                 if (user) {
                     user = Object.assign(user, updatedUser)
@@ -347,15 +419,84 @@ exports.handle_user_banishment = function(req, res) {
  *           description: Internal server error
  *           content: {}
  */
-exports.delete_a_user = function(req, res) {
+exports.delete_a_user = async function(req, res) {
     var id = req.params.userId;
     var lang = dict.getLang(req);
-    Users.findOneAndDelete({"_id": id}, null, function (err) {
-      if (err) {
-        console.error('Error removing data from DB');
-        res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
-      } else {
-        res.sendStatus(204); // no content
-      }
-    });
+    var token = req.headers['authorization'];
+    if(id != await auth.getUserId(token)) {
+        res.status(401).send({ err: dict.get('Unauthorized', lang) });
+    } else {
+        Users.findOneAndDelete({"_id": id}, null, function (err) {
+          if (err) {
+            console.error('Error removing data from DB');
+            res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
+          } else {
+            res.sendStatus(204); // no content
+          }
+        });
+    }
 }
+
+/**
+ * @swagger
+ * path:
+ *  /login:
+ *    get:
+ *      summary: Log in
+ *      tags:
+ *        - User
+ *      parameters:
+ *         - name: login
+ *           in: query
+ *           description: User email or username
+ *           required: true
+ *           schema:
+ *             type: string
+ *         - name: password
+ *           in: query
+ *           description: User password
+ *           required: true
+ *           schema:
+ *             type: string
+ *      responses:
+ *        "200":
+ *          description: Return an user with token
+ *          content:
+ *            application/json:
+ *              schema:
+ *                $ref: '#/components/schemas/user'
+ *        "401":
+ *          description: Forbidden
+ *        "500":
+ *          description: Internal error
+ */
+exports.login_a_user = async function(req, res) {
+    var username = req.body.login;
+    var email = req.body.login;
+    var password = req.body.password;
+    var lang = dict.getLang(req);
+    Users.findOne({ $or: [ { username: username }, { email: email } ] }, function (err, user) {
+        if (err) {
+            res.send(err);
+        } else if (!user) {
+            res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'user', req.query.login) });
+        } else {
+            user.verifyPassword(password, async function(err, isMatch) {
+                if (err) {
+                    res.send(err);
+                } else if (!isMatch) {
+                    res.status(403).send({ err: dict.get('Forbidden', lang) });
+                } else {
+                    try {
+                        var customToken = await admin.auth().createCustomToken(user.email);
+                        user.customToken = customToken;
+                        user.password = null;
+                        res.status(200).json(user);
+                    } catch (error) {
+                        console.error("Error creating custom token:", error);
+                    }
+                }
+            });
+        }
+    });
+};

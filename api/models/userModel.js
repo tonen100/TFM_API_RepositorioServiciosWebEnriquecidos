@@ -52,8 +52,8 @@ var userModel = new Schema({
         required: 'Enter the password of the user please'
     }, role: {
         type: String,
-        required: 'Enter the role of the user please',
-        enum: ['Administrator', 'Contributor']
+        enum: ['Administrator', 'Contributor'],
+        default: 'Contributor'
     }, description: {
         type: String,
         default: null
@@ -65,6 +65,8 @@ var userModel = new Schema({
     }], createdAt: {
         type:Date,
         default: Date.now
+    }, customToken: {
+        type: String
     }
 }, {
     strict: false
@@ -86,12 +88,10 @@ userModel.pre('save', function(callback) {
 });
 
   
-userModel.methods.verifyPassword = function(password, cb) {
+userModel.methods.verifyPassword = function(password, callback) {
     bcrypt.compare(password, this.password, function(err, isMatch) {
-        console.log('verifying password in userModel: ' + password);
-        if (err) return cb(err);
-        console.log('iMatch: ' + isMatch);
-        cb(null, isMatch);
+        if (err) return callback(err);
+        callback(null, isMatch);
     });
 };
 

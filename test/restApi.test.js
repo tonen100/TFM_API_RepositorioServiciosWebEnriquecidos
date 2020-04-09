@@ -13,6 +13,7 @@ describe('RestApis Integration tests', () => {
     var providerId;
     var provider2Id;
     var resPost;
+    var firebaseFakeToken = "token";
 
     var getAllFunc = (done, callback, providerId, businessModels, keywords) => chai
         .request(app)
@@ -22,6 +23,7 @@ describe('RestApis Integration tests', () => {
             (providerId && businessModels ? "&" : "") +
             (businessModels ? "businessModels=" + businessModels.map(bm => bm).join(",") : "") +
             (keywords ? "keywords=" + keywords : ""))
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -37,6 +39,7 @@ describe('RestApis Integration tests', () => {
         chai
         .request(app)
         .get('/v1/restApis/' + restApiId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -52,6 +55,7 @@ describe('RestApis Integration tests', () => {
         chai
         .request(app)
         .put('/v1/restApis/' + restApiId)
+        .set('authorization', firebaseFakeToken)
         .send(newRestApi)
         .end((err, res) => {
             if (err) {
@@ -67,6 +71,7 @@ describe('RestApis Integration tests', () => {
         chai
         .request(app)
         .patch('/v1/restApis/' + restApiId + '/blacklist')
+        .set('authorization', firebaseFakeToken)
         .send(patch)
         .end((err, res) => {
             if (err) {
@@ -82,6 +87,7 @@ describe('RestApis Integration tests', () => {
         chai
         .request(app)
         .patch('/v1/restApis/' + restApiId + '/link/' + provider_id)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -97,6 +103,7 @@ describe('RestApis Integration tests', () => {
         chai
         .request(app)
         .delete('/v1/restApis/' + restApi_id)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -115,6 +122,7 @@ describe('RestApis Integration tests', () => {
                 chai
                     .request(app)
                     .post('/v1/providers')
+                    .set('authorization', firebaseFakeToken)
                     .send({
                         name: "Twitter Inc"
                     }).end((err, res) => {
@@ -145,6 +153,7 @@ describe('RestApis Integration tests', () => {
         chai
             .request(app)
             .post('/v1/restApis')
+            .set('authorization', firebaseFakeToken)
             .send(obj)
             .end((err, res) => {
                 if (err) {
@@ -237,6 +246,7 @@ describe('RestApis Integration tests', () => {
             }, (res2) => chai
                 .request(app)
                 .post('/v1/restApis/' + res3.body._id + '/versions/')
+                .set('authorization', firebaseFakeToken)
                 .send({
                     "number": "v1.0.0",
                     "originalDocumentation": fs.readFileSync('test/ressources/AWSSecurityHub-oas.json').toString(),
@@ -250,6 +260,7 @@ describe('RestApis Integration tests', () => {
                         chai
                         .request(app)
                         .post('/v1/restApis/' + res2.body._id + '/versions/')
+                        .set('authorization', firebaseFakeToken)
                         .send({
                             "number": "v1.0.0",
                             "originalDocumentation": fs.readFileSync('test/ressources/AWSMigrationHub-oas.json').toString(),

@@ -13,10 +13,12 @@ describe('RestApis Versions Integration tests', () => {
     var restApiId;
     var providerId;
     var resPost;
+    var firebaseFakeToken = "token";
 
     var getAllFunc = (done, callback) => chai
         .request(app)
         .get('/v1/restApis/' + restApiId + '/versions')
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -32,6 +34,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
         .request(app)
         .get('/v1/restApis/' + restApiId + '/versions/' + versionId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -47,6 +50,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
         .request(app)
         .put('/v1/restApis/' + restApiId + '/versions/' + versionId)
+        .set('authorization', firebaseFakeToken)
         .send(newRestApi)
         .end((err, res) => {
             if (err) {
@@ -62,6 +66,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
         .request(app)
         .patch('/v1/restApis/' + restApiId + '/versions/' + versionId + '/blacklist')
+        .set('authorization', firebaseFakeToken)
         .send(patch)
         .end((err, res) => {
             if (err) {
@@ -77,6 +82,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
         .request(app)
         .delete('/v1/restApis/' + restApiId + '/versions/' + versionId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -95,6 +101,7 @@ describe('RestApis Versions Integration tests', () => {
                 chai
                     .request(app)
                     .post('/v1/providers')
+                    .set('authorization', firebaseFakeToken)
                     .send({
                         name: "Twitter Inc"
                     }).end((err, res) => {
@@ -105,6 +112,7 @@ describe('RestApis Versions Integration tests', () => {
                             chai
                                 .request(app)
                                 .post('/v1/restApis')
+                                .set('authorization', firebaseFakeToken)
                                 .send({
                                     "name": "Twitter",
                                     "logoUrl": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c8/Twitter_Bird.svg/1200px-Twitter_Bird.svg.png",
@@ -130,6 +138,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
             .request(app)
             .post('/v1/restApis/' + restApiId + '/versions/')
+            .set('authorization', firebaseFakeToken)
             .send({
                 "number": "v1.0.0",
                 "originalDocumentation": fs.readFileSync('test/ressources/twitter-swagger.json').toString(),
@@ -246,6 +255,7 @@ describe('RestApis Versions Integration tests', () => {
         chai
             .request(app)
             .delete('/v1/restApis/' + restApiId + '/versions/' + versionId)
+            .set('authorization', firebaseFakeToken)
             .send()
             .end((err, res) => {
                 if (err) {

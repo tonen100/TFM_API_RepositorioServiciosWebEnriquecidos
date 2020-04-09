@@ -1,8 +1,11 @@
 const app = require("../index");
 const chai = require("chai");
 const chaiHttp = require("chai-http");
+const sinon = require('sinon');
 var mongoose = require('mongoose'),
 Users = mongoose.model('Users');
+
+var admin = require('firebase-admin');
 
 const { expect } = chai;
 chai.use(chaiHttp);
@@ -10,10 +13,12 @@ chai.use(chaiHttp);
 describe('Users Integration tests', () => {
     var userId;
     var resPost;
+    var firebaseFakeToken = "token";
 
     var getAllFunc = (done, callback) => chai
         .request(app)
         .get('/v1/users')
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -29,6 +34,7 @@ describe('Users Integration tests', () => {
         chai
         .request(app)
         .get('/v1/users/' + userId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -40,10 +46,17 @@ describe('Users Integration tests', () => {
             }
         });
 
-    var putByIdFunc = (done, newUser, callback) =>
+    var putByIdFunc = (done, newUser, callback) => {
+        admin.auth().verifyIdToken.restore();
+        sinon.stub(admin.auth(), "verifyIdToken").callsFake(() => { 
+            return {
+                uid: 'f@f.com'
+            }
+        });
         chai
         .request(app)
         .put('/v1/users/' + userId)
+        .set('authorization', firebaseFakeToken)
         .send(newUser)
         .end((err, res) => {
             if (err) {
@@ -51,14 +64,22 @@ describe('Users Integration tests', () => {
             } 
             else {
                 callback(res);
+                admin.auth().verifyIdToken.restore();
+                sinon.stub(admin.auth(), "verifyIdToken").callsFake(() => { 
+                    return {
+                        uid: 'admin@test.com'
+                    }
+                });
                 done();
             }
         });
+    } 
 
     var banByIdFunc = (done, patch, callback) =>
         chai
         .request(app)
         .patch('/v1/users/' + userId + '/ban')
+        .set('authorization', firebaseFakeToken)
         .send(patch)
         .end((err, res) => {
             if (err) {
@@ -70,10 +91,17 @@ describe('Users Integration tests', () => {
             }
         });
 
-    var deleteByIdFunc = (done, callback) =>
+    var deleteByIdFunc = (done, callback) => {
+        admin.auth().verifyIdToken.restore();
+        sinon.stub(admin.auth(), "verifyIdToken").callsFake(() => { 
+            return {
+                uid: 'f@f.com'
+            }
+        });
         chai
         .request(app)
         .delete('/v1/users/' + userId)
+        .set('authorization', firebaseFakeToken)
         .send()
         .end((err, res) => {
             if (err) {
@@ -81,13 +109,19 @@ describe('Users Integration tests', () => {
             } 
             else {
                 callback(res);
+                admin.auth().verifyIdToken.restore();
+                sinon.stub(admin.auth(), "verifyIdToken").callsFake(() => { 
+                    return {
+                        uid: 'admin@test.com'
+                    }
+                });
                 done();
             }
         });
-    
+    }    
 
     before((done) => {
-        Users.collection.deleteMany({}, () => {
+        Users.collection.deleteMany({ $not: { email: 'admin@test.com' } }, () => {
             done();
         });
     });
@@ -96,11 +130,12 @@ describe('Users Integration tests', () => {
         chai
             .request(app)
             .post('/v1/users')
+            .set('authorization', firebaseFakeToken)
             .send({
                 "username": "Medor",
                 "email": "f@f.com",
                 "password": "s",
-                "role": "Administrator"
+                "role": "Contributor"
             })
             .end((err, res) => {
                 if (err) {
@@ -193,33 +228,12 @@ describe('Users Integration tests', () => {
         });
     });
 
-    describe('DELETE Users id', () => {
-        it('should return status code 204', done => {
-            deleteByIdFunc(() => {}, res => {
-                expect(res).to.have.status(204)
-                // Verify that delete is idempotent and that ressource is deleted
-                deleteByIdFunc(() => getByIdFunc(done, res => expect(res).to.have.status(404)), res => expect(res).to.have.status(204));
-            });
-        });
-    });
-
     afterEach(done => {
-        chai
-            .request(app)
-            .delete('/v1/users/' + userId)
-            .send()
-            .end((err, res) => {
-                if (err) {
-                    done(err);
-                } 
-                else {
-                    done();
-                }
-            });
+        deleteByIdFunc(done, res => {});
     })
 
     after((done) => {
-        Users.collection.deleteMany({}, () => {
+        Users.collection.deleteMany({ $not: { email: 'admin@test.com' } }, () => {
             done();
         });
     });

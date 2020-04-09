@@ -15,7 +15,8 @@ bodyParser = require('body-parser');
 require('dotenv').config();
 var fs = require('fs');
 var http = require('http');
-var https = require('https');
+var admin = require('firebase-admin'),
+serviceAccount = require('./firebase-config.json');
 // MongoDB URI building
 var mongoDBUser = process.env.MONGO_USER || "admin";
 var mongoDBPass = process.env.MONGO_PASSWORD || "mdp";
@@ -43,10 +44,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(enable_cors());
 
-// admin.initializeApp({
-//     credential: admin.credential.cert(serviceAccount),
-//     databaseURL: "https://acme-explorer-6415d.firebaseio.com"
-// });
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://tfm-api-repositorio.firebaseio.com"
+});
 
 var contributionHistoryRoutes = require('./api/routes/contributionHistoryRoutes'),
 providerRoutes = require('./api/routes/providerRoutes'),
@@ -74,10 +75,6 @@ mongoose.connection.on("open", function (err, conn) {
     });
     
     http.createServer(app)
-    // https.createServer({
-    //     key: fs.readFileSync('./server.key'),
-    //     cert: fs.readFileSync('./server.cert')
-    // }, app)
     .listen(port, function () {
         console.log('API Respository RESTful API server started on: ' + port);
     });
