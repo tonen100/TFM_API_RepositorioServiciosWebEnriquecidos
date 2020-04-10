@@ -1,0 +1,62 @@
+@startuml "DCU APIs Repositorio"
+left to right direction
+(Add RestAPI) as (addA)
+(Add version to RestAPI) as (addV)
+(Add provider) as (addP)
+(Edit RestAPI) as (editA)
+(Edit version) as (editV)
+(Depreciate version) as (deprV)
+(Edit provider) as (editP)
+(Delete API) as (delA)
+(Delete versions of API) as (delV)
+(List APIs) as (getAs)
+(List APIs of provider) as (getAP)
+(Check API details) as (getA)
+(List versions of API) as (getVs)
+(Check version details) as (getV)
+(List providers) as (getPs)
+(Check provider details) as (getP)
+(Check profile) as (getU)
+(Modify its own details) as (editU)
+(List contributions history) as (getCH)
+(Link provider to RestAPI) as (lpta)
+
+User <|-- Administrator
+User <|-- Contributor
+Contributor --> (addA)
+(addA) ..> (addV) : include
+(addA) ..> (lpta) : include
+(lpta) <.. (addP) : extends
+Contributor --> (addP)
+Contributor --> (editA)
+(editA) <|-- (delV)
+(editA) <|-- (addV)
+Contributor --> (editV)
+(editV) <|-- (deprV)
+Contributor --> (editP)
+Contributor -->  (delA)
+(delA) ..> (delV) : include
+Administrator --> (List users)
+(List users) <.. (Check profile user) : extends
+(Check profile user) <.. (Modify details of an user) : extends
+(Check profile user) <.. (Ban contributor) : extends
+Administrator --> (Blacklist)
+(Blacklist) <|-- (Blacklist RestAPI)
+(Blacklist) <|-- (Blacklist version)
+(Blacklist) <|-- (Blacklist provider)
+(Blacklist provider) .> (Blacklist RestAPI) : include
+(Blacklist RestAPI) .> (Blacklist version) : include
+
+User --> (getAs)
+(getP) <.. (getAP) : extends
+(getAs) <|-- (getAP)
+(getAs) <.. (getA) : extends
+(getA) <.. (getVs) : extends
+(getA) <.. (getP) : extends
+(getVs) <.. (getV) : extends
+User --> (getPs)
+(getPs) <.. (getP) : extends
+Contributor --> (getU)
+(getU) <.. (editU) : extends
+(getU) <.. (getCH) : extends
+@enduml
