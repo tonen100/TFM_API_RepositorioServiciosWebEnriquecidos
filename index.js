@@ -26,7 +26,7 @@ var mongoDBHostname = process.env.mongoDBHostname || "localhost";
 var mongoDBPort = process.env.mongoDBPort || "27017";
 var mongoDBName = process.env.mongoDBName || "API_Repository";
 
-var mongoDBURI = "mongodb://" + mongoDBCredentials + mongoDBHostname + ":" + mongoDBPort + "/" + mongoDBName;
+var mongoDBURI = process.env.MONGO_URL ||"mongodb://" + mongoDBCredentials + mongoDBHostname + ":" + mongoDBPort + "/" + mongoDBName;
  
 mongoose.connect(mongoDBURI, {
     reconnectTries: 10,
