@@ -41,7 +41,6 @@ exports.verifyUser = function (requiredRoles) {
                     if (err) {
                         res.send(err);
                     } else if (!user) {
-                        console.log(idToken)
                         res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'user', uid) });
                     } else {    
                         var isAuth = false;
