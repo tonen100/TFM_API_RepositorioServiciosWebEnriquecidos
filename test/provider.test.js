@@ -137,6 +137,7 @@ describe('Providers Integration tests', () => {
                 "https://twitter.com/explore"
             ]
         }, (res) => {
+            console.log(res)
             providerId = res.body._id;
             resPost = res;
             done();
