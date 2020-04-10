@@ -35,6 +35,8 @@ var bcrypt = require('bcrypt');
  *          created_at:
  *            type: string
  *            format: date
+ *          custom_token:
+ *            type: string
  *          __v:
  *            type: integer
  */

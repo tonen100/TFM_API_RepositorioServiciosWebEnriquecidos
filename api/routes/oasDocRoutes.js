@@ -38,16 +38,14 @@ const options = {
           }
         },
         // securitySchemes: {
-        //   bearerAuth: {
-        //     type: 'http',
-        //     scheme: 'bearer',
-        //     bearerFormat: 'JWT',
+        //   firebase: {
+        //     "type": "http",
+        //     "scheme": "bearer",
+        //     "bearerFormat": "JWT",
+        //     "description": "Custom token retrieved by logging in ('/login')",
         //   }
         // }
       },
-    //   security: [{
-    //     bearerAuth: []
-    //   }],
       servers: [
         {
           url: process.env.urlApp || "http://localhost:8080/v1"
@@ -63,7 +61,10 @@ const options = {
         "./api/controllers/restApiController.js",
         "./api/controllers/providerController.js",
         "./api/controllers/contributionHistoryController.js"
-    ],        
+    ],
+    // security: [{
+    //   firebase: []
+    // }]
   };
 
 const specs = swaggerJsdoc(options);

@@ -83,6 +83,7 @@ exports.list_all_users = function(req, res) {
  *                  type: string
  *                password:
  *                  type: string
+ *                  format: password
  *      responses:
  *        '201':
  *          description: Created
@@ -151,6 +152,7 @@ exports.create_a_contributor = function(req, res) {
  *                  type: string
  *                password:
  *                  type: string
+ *                  format: password
  *                role:
  *                  type: string
  *                  enum: [Administrator, Contributor]
@@ -441,23 +443,27 @@ exports.delete_a_user = async function(req, res) {
  * @swagger
  * path:
  *  /login:
- *    get:
+ *    post:
  *      summary: Log in
  *      tags:
  *        - User
- *      parameters:
- *         - name: login
- *           in: query
- *           description: User email or username
- *           required: true
- *           schema:
- *             type: string
- *         - name: password
- *           in: query
- *           description: User password
- *           required: true
- *           schema:
- *             type: string
+ *      requestBody:
+ *        description: The credentials of the user
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              required:
+ *                - login
+ *                - password
+ *              properties:
+ *                login:
+ *                  description: User email or username
+ *                  type: string
+ *                password:
+ *                  type: string
+ *                  format: password
+ *        required: true
  *      responses:
  *        "200":
  *          description: Return an user with token
@@ -479,7 +485,7 @@ exports.login_a_user = async function(req, res) {
         if (err) {
             res.send(err);
         } else if (!user) {
-            res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'user', req.query.login) });
+            res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'user', req.body.login) });
         } else {
             user.verifyPassword(password, async function(err, isMatch) {
                 if (err) {

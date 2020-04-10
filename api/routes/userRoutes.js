@@ -8,7 +8,7 @@ module.exports = function(app) {
     var auth = require('../controllers/authController');
 
     routerv1.route('/login')
-        .get(usersv1.login_a_user);
+        .post(usersv1.login_a_user);
     routerv1.route('/users')
         .get(usersv1.list_all_users)
         .post(usersv1.create_a_contributor);
