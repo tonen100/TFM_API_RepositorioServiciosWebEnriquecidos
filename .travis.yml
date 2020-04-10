@@ -7,10 +7,10 @@ services:
   - mongodb
 install:
   - npm install
+  - mongo < setupDevMongo.js
 before_script:
   - sleep 15
 script:
-  - mongo < setupDevMongo.js
   - npm test
 
 deploy:
