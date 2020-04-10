@@ -9,7 +9,7 @@ install:
   - npm install
 
 script:
-  - echo "npm test"
+  - npm test
 
 deploy:
   provider: heroku
