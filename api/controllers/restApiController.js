@@ -15,6 +15,7 @@ RestApis = mongoose.model('RestApis');
 var NodeCache = require( "node-cache" );
 var restApisCache = new NodeCache( { stdTTL: 600, checkperiod: 60, useClones: true } );
 
+var auth = require('./authController');
 var contributionsHistory = require('./contributionHistoryController');
 var documentClassifier = require('../documentClassifier');
 var LangDictionnary = require('../langDictionnary');
@@ -187,7 +188,7 @@ exports.list_all_restApis = async function(req, res) {
 exports.create_a_restApi = function(req, res) {
     var new_restApi = new RestApis(req.body);
     var lang = dict.getLang(req);
-    new_restApi.save(function(err, restApi) {
+    new_restApi.save(async function(err, restApi) {
         if(err) {
             if(err.name=='ValidationError') {
                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -197,7 +198,8 @@ exports.create_a_restApi = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
             }
         } else {
-            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'ADD', 'RestAPI'); // TODO
+            var userId = await auth.getUserId(req.headers['authorization']);
+            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'ADD', 'RestAPI');
             restApi.versions = getLastVersion(restApi);
             res.status(201).send(restApi);
         }
@@ -320,7 +322,7 @@ exports.edit_a_restApi = function(req, res) {
                     if(updatedRestApi.logoUrl) restApi.logoUrl = updatedRestApi.logoUrl;
                     if(updatedRestApi.description) restApi.description = updatedRestApi.description;
                     if(updatedRestApi.businessModels) restApi.businessModels = updatedRestApi.businessModels;
-                    restApi.save(function(err2, newRestApi) {
+                    restApi.save(async function(err2, newRestApi) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
                                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -330,7 +332,8 @@ exports.edit_a_restApi = function(req, res) {
                                 res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                             }
                         } else {
-                            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'EDIT', 'RestAPI'); // TODO
+                            var userId = await auth.getUserId(req.headers['authorization']);
+                            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'EDIT', 'RestAPI');
                             newRestApi.versions = getLastVersion(newRestApi);
                             res.send(newRestApi); // return the updated restApi
                         }
@@ -474,7 +477,7 @@ exports.link_provider_to_api = function(req, res) {
             console.error('Error getting data from DB');
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else if(provider) {
-            RestApis.findOneAndUpdate({"_id": id}, { "provider_id": provider_id }, { new: true }, function(err2, restApi) {
+            RestApis.findOneAndUpdate({"_id": id}, { "provider_id": provider_id }, { new: true }, async function(err2, restApi) {
                 if (err2) {
                     console.error('Error getting data from DB');
                     res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
@@ -482,9 +485,10 @@ exports.link_provider_to_api = function(req, res) {
                     if (restApi) {
                         restApi.versions = getLastVersion(restApi);
                         res.send(restApi);
+                        var userId = await auth.getUserId(req.headers['authorization']);
+                        contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'EDIT', 'RestAPI');
                     } else {
                         console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
-                        contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'EDIT', 'RestAPI'); // TODO
                         res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) });
                     }
                 }
@@ -525,13 +529,15 @@ exports.link_provider_to_api = function(req, res) {
 exports.delete_a_restApi = function(req, res) {
     var id = req.params.restApiId;
     var lang = dict.getLang(req);
-    RestApis.findOneAndDelete({"_id": id}, null, function (err, restApi) {
+    RestApis.findOneAndDelete({"_id": id}, null, async function (err, restApi) {
       if (err) {
         console.error('Error removing data from DB');
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
-        if(restApi)
-            contributionsHistory.create_a_contributionHistory(restApi._id, restApi._id, 'DELETE', 'RestAPI', restApi.name); // TODO
+        if(restApi) {
+            var userId = await auth.getUserId(req.headers['authorization']);
+            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'DELETE', 'RestAPI', restApi.name);
+        }
         res.sendStatus(204);
       }
     });

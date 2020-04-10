@@ -4,16 +4,17 @@ node_js:
   - "13"
 services:
   - docker
-
+  - mongodb
 install:
   - npm install
-
+before_script:
+  - sleep 15
 script:
   - npm test
 
 deploy:
   provider: heroku
   api_key: $API_KEY
-  app: tfm-api-repositorio
+  app: $APP_NAME
   on:
     branch: master

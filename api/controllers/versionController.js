@@ -17,6 +17,7 @@ var oas2SchemaOrg = require('oas2schema.org');
 var NodeCache = require( "node-cache" );
 var versionsCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
 
+var auth = require('./authController');
 var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
@@ -177,7 +178,7 @@ exports.create_a_restApi_version = function(req, res) {
                             } else {
                                 restApi.metadata = version.metadata;
                                 restApi.versions.push(version);
-                                restApi.save(function(err3, newRestApi) {
+                                restApi.save(async function(err3, newRestApi) {
                                     if(err3) {
                                         if(err3.name=='ValidationError') {
                                             res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -187,7 +188,8 @@ exports.create_a_restApi_version = function(req, res) {
                                             res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                                         }
                                     } else {
-                                        contributionsHistory.create_a_contributionHistory(version._id, version._id, 'ADD', 'Version'); // TODO
+                                        var userId = await auth.getUserId(req.headers['authorization']);
+                                        contributionsHistory.create_a_contributionHistory(version._id, userId, 'ADD', 'Version');
                                         res.status(201).send(version);
                                     }
                                 });
@@ -352,11 +354,11 @@ exports.edit_a_restApi_version = function(req, res) {
                             if(!restApi.versions.find(_version => _version.number == updatedVersion.number)) {
                                 version.number = updatedVersion.number;
                             } else {
-                                res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, version.number) }); //TODO
+                                res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, version.number) });
                             }
                         }
                         if(updatedVersion.description) version.description = updatedVersion.description;
-                        restApi.save(function(err3, newRestApi) {
+                        restApi.save(async function(err3, newRestApi) {
                             if(err3) {
                                 if(err3.name=='ValidationError') {
                                     res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -365,7 +367,8 @@ exports.edit_a_restApi_version = function(req, res) {
                                     res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                                 }
                             } else {
-                                contributionsHistory.create_a_contributionHistory(id, id, 'EDIT', 'Version'); // TODO
+                                var userId = await auth.getUserId(req.headers['authorization']);
+                                contributionsHistory.create_a_contributionHistory(id, userId, 'EDIT', 'Version');
                                 res.status(200).send(newRestApi.versions.find(_version => _version.number == req.body.number));
                             }
                         });                         
@@ -510,14 +513,16 @@ exports.delete_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var id = req.params.versionId;
     var lang = dict.getLang(req);
-    RestApis.findById(api_id, function(err, restApi) {
+    RestApis.findById(api_id, async function(err, restApi) {
         if (err) {
             console.error('Error getting data from DB');
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
           } else {
             if (restApi) {
-                if(restApi.versions.find(_version => _version._id == id))
-                    contributionsHistory.create_a_contributionHistory(id, id, 'DELETE', 'Version', restApi.name); // TODO
+                if(restApi.versions.find(_version => _version._id == id)) {
+                    var userId = await auth.getUserId(req.headers['authorization']);
+                    contributionsHistory.create_a_contributionHistory(id, userId, 'DELETE', 'Version', restApi.name);   
+                }
                 restApi.versions = restApi.versions.filter(_version => _version._id != id);
                 restApi.save(function(err2, _) {
                     if(err2) {

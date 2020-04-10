@@ -12,6 +12,7 @@
 
 var mongoose = require('mongoose')
 Providers = mongoose.model('Providers');
+var auth = require('./authController');
 var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
@@ -110,7 +111,7 @@ exports.list_all_providers = function(req, res) {
 exports.create_a_provider = function(req, res) {
     var new_provider = new Providers(req.body);
     var lang = dict.getLang(req);
-    new_provider.save(function(err, provider) {
+    new_provider.save(async function(err, provider) {
         if(err) {
             if(err.name=='ValidationError') {
                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -120,7 +121,8 @@ exports.create_a_provider = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
             }
         } else {
-            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'ADD', 'Provider'); // TODO
+            var userId = await auth.getUserId(req.headers['authorization']);
+            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'ADD', 'Provider');
             res.status(201).send(provider);
         }
     });
@@ -238,7 +240,7 @@ exports.edit_a_provider = function(req, res) {
                     if(updatedProvider.logoUrl) provider.logoUrl = updatedProvider.logoUrl;
                     if(updatedProvider.description) provider.description = updatedProvider.description;
                     if(updatedProvider.externalLinks) provider.externalLinks = updatedProvider.externalLinks;
-                    provider.save(function(err2, newProvider) {
+                    provider.save(async function(err2, newProvider) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
                                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -248,7 +250,8 @@ exports.edit_a_provider = function(req, res) {
                                 res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
                             }
                         } else {
-                            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'EDIT', 'Provider'); // TODO
+                            var userId = await auth.getUserId(req.headers['authorization']);
+                            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'EDIT', 'Provider');
                             res.send(newProvider);
                         }
                     });
@@ -374,13 +377,15 @@ exports.handle_provider_blacklist = async function(req, res) {
 exports.delete_a_provider = function(req, res) {
     var id = req.params.providerId;
     var lang = dict.getLang(req);
-    Providers.findOneAndDelete({"_id": id}, null, function (err, provider) {
+    Providers.findOneAndDelete({"_id": id}, null, async function (err, provider) {
       if (err) {
         console.error('Error removing data from DB');
         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
       } else {
-        if(provider)
-            contributionsHistory.create_a_contributionHistory(provider._id, provider._id, 'DELETE', 'Provider', provider.name); // TODO
+        if(provider) {
+            var userId = await auth.getUserId(req.headers['authorization']);
+            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'DELETE', 'Provider', provider.name);
+        }
         res.sendStatus(204);
       }
     });

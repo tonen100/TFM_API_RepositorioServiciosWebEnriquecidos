@@ -34,7 +34,6 @@ exports.verifyUser = function (requiredRoles) {
             res.status(401).send({ err: dict.get('Unauthorized', lang) });
         } else {
             idToken = idToken.replace('Bearer ', '');
-            console.log(idToken);
             try {
                 var decodedToken = await admin.auth().verifyIdToken(idToken);
                 var uid = decodedToken.uid;
@@ -58,7 +57,6 @@ exports.verifyUser = function (requiredRoles) {
                 });
             }
             catch(err) {
-                console.log(err)
                 res.status(403).send({ err: dict.get('Forbidden', lang) });
             }
         }
