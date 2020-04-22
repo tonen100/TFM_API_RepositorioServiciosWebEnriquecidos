@@ -22,6 +22,10 @@ var contributionsHistory = require('./contributionHistoryController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
+function getLastVersionNotBlacklisted(restAPI) {
+    return [restAPI.versions.filter(version => !version.blacklisted).sort((a, b) => b.createdAt - a.createdAt)[0]]
+}
+
 function generateMetadata(version) {
     if(version.originalDocumentation) {
         return oas2SchemaOrg.oasConverter.convertToOASv3(version.originalDocumentation, oas2SchemaOrg.oasConverter.extractFormat(version.originalDocumentation)).then(oasDoc => {
@@ -339,7 +343,7 @@ exports.edit_a_restApi_version = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
               } else {
                 if (restApi) {
-                    var version = restApi.versions.find(_version => _version._id == id);
+                    var version = restApi.versions.find(_version => _version._id == id && !_version.blacklisted);
                     if(version) {
                         if(updatedVersion.originalDocumentation && version.originalDocumentation != updatedVersion.originalDocumentation) {
                             version.originalDocumentation = updatedVersion.originalDocumentation;
@@ -419,7 +423,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *              required:
  *                - blacklisted
  *              properties:
- *                banned:
+ *                blacklisted:
  *                  type: boolean
  *      responses:
  *        '200':
@@ -456,7 +460,110 @@ exports.handle_restApi_version_blacklist = function(req, res) {
                 if (restApi) {
                     var version = restApi.versions.find(_version => _version._id == id);
                     if(version) {
-                        version.blacklisted = blacklisted;
+                        if(getLastVersionNotBlacklisted(restApi).number == version.number) {
+                            version.blacklisted = blacklisted;
+                            restApi.metadata = getLastVersionNotBlacklisted(restApi).metadata;
+                        } else {
+                            version.blacklisted = blacklisted;
+                        }
+                        restApi.save(function(err2, newRestApi) {
+                            if(err2) {
+                                if(err2.name=='ValidationError') {
+                                    res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                                }
+                                else{
+                                    console.error(dict.get('ErrorUpdateDB', lang));
+                                    res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
+                                }
+                            } else {
+                                res.status()
+                                res.status(200).send(newRestApi.versions.find(_version => _version.number == version.number));
+                            }
+                        });
+                    } else {
+                        console.warn(dict.get('RessourceNotFound', lang, 'version', id));
+                        res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'version', id) }); // not found
+                    }
+                } else {
+                    console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
+                    res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
+                }
+            }
+        });
+    }
+}
+
+/**
+ * @swagger
+ * path:
+ *  '/restApis/{restApiId}/versions/{versionId}/depreciate':
+ *    patch:
+ *      tags:
+ *        - Version
+ *      description: >-
+ *        Depreciate or undepreciate a version of a rest API
+ *      operationId: patchVersionDepreciate
+ *      parameters:
+ *        - name: restApiId
+ *          in: path
+ *          description: id of the rest API you wanna depreciate a version from
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - name: versionId
+ *          in: path
+ *          description: id of the version of a rest API you want to depreciate or undepreciate
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - $ref: '#/components/parameters/language'
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              required:
+ *                - deprecated
+ *              properties:
+ *                deprecated:
+ *                  type: boolean
+ *      responses:
+ *        '200':
+ *          description: Updated version
+ *          content:
+ *            application/json:
+ *              schema:
+ *                allOf:
+ *                - $ref: '#/components/schemas/version'
+ *        '404':
+ *           description: Version not found
+ *           content: Not Found
+ *        '422':
+ *           description: Incorrect body
+ *           content: {}
+ *        '500':
+ *           description: Internal server error
+ *           content: {}
+ */
+exports.handle_restApi_version_depreciate = function(req, res) {
+    var deprecated = req.body ? req.body.deprecated : undefined;
+    var api_id = req.params.restApiId;
+    var id = req.params.versionId;
+    var lang = dict.getLang(req);
+    if (deprecated == null || typeof(deprecated) != "boolean") {
+        console.warn("New PATCH request to /versions/id/depreciate without correct attribute deprecated, sending 422...");
+        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+    } else {
+        RestApis.findById(api_id, function(err, restApi) {
+            if (err) {
+                console.error('Error getting data from DB');
+                res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
+              } else {
+                if (restApi) {
+                    var version = restApi.versions.find(_version => _version._id == id);
+                    if(version) {
+                        version.deprecated = deprecated;
                         restApi.save(function(err2, newRestApi) {
                             if(err2) {
                                 if(err2.name=='ValidationError') {
@@ -539,4 +646,18 @@ exports.delete_a_restApi_version = function(req, res) {
             }
         }
     });
+}
+
+/** For front validation only */
+exports.convert_to_OAS_and_metadata = function(req, res) {
+    var pseudoVersion = {};
+    pseudoVersion.originalDocumentation = req.body.documentation;
+    pseudoVersion.urlAPI = req.body.urlAPI;
+    pseudoVersion.urlDoc = req.body.urlDoc
+    try {
+        generateMetadata(pseudoVersion).then(generatedPseudoVersion => res.send(generatedPseudoVersion));
+    } catch(errGenerate) {
+        if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
+        else res.status(424).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
+    }
 }

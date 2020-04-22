@@ -59,6 +59,7 @@ const options = {
         "./api/models/contributionHistoryModel.js",
         "./api/controllers/userController.js",
         "./api/controllers/restApiController.js",
+        "./api/controllers/versionController.js",
         "./api/controllers/providerController.js",
         "./api/controllers/contributionHistoryController.js"
     ],

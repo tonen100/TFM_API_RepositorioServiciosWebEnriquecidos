@@ -143,6 +143,7 @@ restApiSchema.pre('deleteOne', async function(callback){
     callback();
 });
 
+restApiSchema.index({ 'blacklisted': -1, 'name': 1 });
 restApiSchema.index({ 'blacklisted': -1, 'provider_id': 1 });
 restApiSchema.index({ 'blacklisted': -1, 'business_models': 1, 'name': "text", 'description': "text" });
 

@@ -471,7 +471,7 @@ exports.delete_a_user = async function(req, res) {
  *            application/json:
  *              schema:
  *                $ref: '#/components/schemas/user'
- *        "401":
+ *        "403":
  *          description: Forbidden
  *        "500":
  *          description: Internal error
@@ -481,7 +481,7 @@ exports.login_a_user = async function(req, res) {
     var email = req.body.login;
     var password = req.body.password;
     var lang = dict.getLang(req);
-    Users.findOne({ $or: [ { username: username }, { email: email } ] }, function (err, user) {
+    Users.findOne({ $or: [ { username: username }, { email: email } ], banned: false }, function (err, user) {
         if (err) {
             res.send(err);
         } else if (!user) {

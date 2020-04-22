@@ -55,6 +55,21 @@ async function getContributionNames (contributionsHistory) {
  *        Retrieve the contributions history
  *      operationId: getContributionsHistory
  *      parameters:
+ *        - name: contributionId
+ *          in: query
+ *          description: The id of the contribution to retrieve the history for
+ *          required: false
+ *        - name: contributorId
+ *          in: query
+ *          description: The id of the contributor to retrieve the history for
+ *          required: false
+ *        - name: typeContribution
+ *          in: query
+ *          description: The beginning of the name of the API to retrieve
+ *          schema:
+ *            type: string
+ *            enum: [RestAPI, Version, Provider]
+ *          required: false
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':

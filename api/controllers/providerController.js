@@ -28,6 +28,10 @@ var dict = new LangDictionnary();
  *        Retrieve all the providers
  *      operationId: getProviders
  *      parameters:
+ *        - name: name
+ *          in: query
+ *          description: The beginning of the name of the API to retrieve
+ *          required: false
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -45,13 +49,17 @@ var dict = new LangDictionnary();
  */
 exports.list_all_providers = function(req, res) {
     var lang = dict.getLang(req);
-    Providers.find({ blacklisted: false }, function(err, providers) {
+    var filters = { blacklisted: false };
+    
+    if(req.query.include_blacklisted && typeof(req.query.include_blacklisted) == 'boolean') delete filters.blacklisted;
+    if(req.query.name && typeof(req.query.name) == 'string') filters.name = {$regex : "^" + name + ".*"};
+    Providers.find(filters, function(err, providers) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
             res.json(providers);
         }
-    })
+    });
 }
 
 /**

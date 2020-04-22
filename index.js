@@ -66,10 +66,11 @@ mongoose.connection.on("open", function (err, conn) {
     Users.findOne({"email": "admin@test.com"}, (err, user) => {
         if(!user) {
             new User({
-                "username": "Test",
+                "username": "Admin",
                 "email": "admin@test.com",
                 "password": mongoDBPass,
-                "role": "Administrator"
+                "role": "Administrator",
+                "banned": false
             }).save();
         }
     });

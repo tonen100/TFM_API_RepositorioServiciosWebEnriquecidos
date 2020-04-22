@@ -64,5 +64,6 @@ providerSchema.pre('deleteOne', async (callback) => {
 });
 
 providerSchema.index({ 'blacklisted': -1 });
+providerSchema.index({ 'blacklisted': -1, 'name': -1 });
 
 module.exports = mongoose.model('Providers', providerSchema);

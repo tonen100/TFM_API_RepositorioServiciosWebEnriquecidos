@@ -78,6 +78,22 @@ describe('RestApis Versions Integration tests', () => {
             }
         });
 
+    var depreciateById = (done, patch, callback) =>
+        chai
+        .request(app)
+        .patch('/v1/restApis/' + restApiId + '/versions/' + versionId + '/depreciate')
+        .set('authorization', firebaseFakeToken)
+        .send(patch)
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            } 
+            else {
+                callback(res);
+                done();
+            }
+        });
+
     var deleteByIdFunc = (done, callback) =>
         chai
         .request(app)
@@ -238,6 +254,30 @@ describe('RestApis Versions Integration tests', () => {
         });
         it('should return the right unblacklisted version of restApi', done => {
             blacklistById(done, correctRepatch,  res => expect(res.body.blacklisted).to.be.false);
+        });
+    });
+
+    describe('PATCH RestAPI id Versions id depreciate', () => {
+        var correctPatch = {
+            "deprecated": true,
+        };
+        var wrongPatch = {
+            "deprecated": "Not a boolean"
+        };
+        var correctRepatch = {
+            "deprecated": false,
+        };
+        it('should return status code 200', done => {
+            depreciateById(done, correctPatch, res => expect(res).to.have.status(200));
+        });
+        it('should return the right deprecated version of restApi', done => {
+            depreciateById(done, correctPatch,  res => expect(res.body.deprecated).to.be.true);
+        });
+        it('should return status code 422', done => {
+            depreciateById(done, wrongPatch, res => expect(res).to.have.status(422));
+        });
+        it('should return the right undeprecated version of restApi', done => {
+            depreciateById(done, correctRepatch,  res => expect(res.body.deprecated).to.be.false);
         });
     });
 

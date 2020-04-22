@@ -43,7 +43,8 @@ var bcrypt = require('bcrypt');
 var userModel = new Schema({
     username: {
         type: String,
-        required: 'Enter the username of the user please'
+        required: 'Enter the username of the user please',
+        unique: true
     }, email: {
         type: String,
         required: 'Enter the email of the user please',

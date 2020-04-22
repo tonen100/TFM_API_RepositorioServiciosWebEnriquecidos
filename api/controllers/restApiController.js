@@ -48,6 +48,10 @@ function getLastVersion(restAPI) {
  *          in: query
  *          description: keywords of the search (use matching score based algorithm on APIs metadata to filter with this parameter)
  *          required: false
+ *        - name: name
+ *          in: query
+ *          description: Exact name of the API to retrieve
+ *          required: false
  *        - name: providerId
  *          in: query
  *          description: id of the provider who wanna search api for
@@ -88,6 +92,11 @@ exports.list_all_restApis = async function(req, res) {
     var keywords = null;
     var restApis;
     
+    if(req.query.name && typeof(req.query.name) == 'string') {
+        restApis = await RestApis.find({ name: name }, { _id: 1 });
+        res.json(restApis);
+        return;
+    }
     if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
     if(req.query.keywords && typeof(req.query.keywords) == 'string') {
         keywords = req.query.keywords.toLowerCase();
