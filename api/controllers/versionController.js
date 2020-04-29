@@ -18,7 +18,7 @@ var NodeCache = require( "node-cache" );
 var versionsCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
 
 var auth = require('./authController');
-var contributionsHistory = require('./contributionHistoryController');
+var historyContributions = require('./historyContributionController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -193,7 +193,7 @@ exports.create_a_restApi_version = function(req, res) {
                                         }
                                     } else {
                                         var userId = await auth.getUserId(req.headers['authorization']);
-                                        contributionsHistory.create_a_contributionHistory(version._id, userId, 'ADD', 'Version');
+                                        historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version');
                                         res.status(201).send(version);
                                     }
                                 });
@@ -372,7 +372,7 @@ exports.edit_a_restApi_version = function(req, res) {
                                 }
                             } else {
                                 var userId = await auth.getUserId(req.headers['authorization']);
-                                contributionsHistory.create_a_contributionHistory(id, userId, 'EDIT', 'Version');
+                                historyContributions.create_a_historyContribution(id, userId, 'EDIT', 'Version');
                                 res.status(200).send(newRestApi.versions.find(_version => _version.number == req.body.number));
                             }
                         });                         
@@ -628,7 +628,7 @@ exports.delete_a_restApi_version = function(req, res) {
             if (restApi) {
                 if(restApi.versions.find(_version => _version._id == id)) {
                     var userId = await auth.getUserId(req.headers['authorization']);
-                    contributionsHistory.create_a_contributionHistory(id, userId, 'DELETE', 'Version', restApi.name);   
+                    historyContributions.create_a_historyContribution(id, userId, 'DELETE', 'Version', restApi.name);   
                 }
                 restApi.versions = restApi.versions.filter(_version => _version._id != id);
                 restApi.save(function(err2, _) {
@@ -649,13 +649,15 @@ exports.delete_a_restApi_version = function(req, res) {
 }
 
 /** For front validation only */
-exports.convert_to_OAS_and_metadata = function(req, res) {
+exports.convert_to_OAS_and_metadata = async function(req, res) {
     var pseudoVersion = {};
-    pseudoVersion.originalDocumentation = req.body.documentation;
+    var lang = dict.getLang(req);
+    pseudoVersion.originalDocumentation = req.body.originalDocumentation;
     pseudoVersion.urlAPI = req.body.urlAPI;
     pseudoVersion.urlDoc = req.body.urlDoc
     try {
-        generateMetadata(pseudoVersion).then(generatedPseudoVersion => res.send(generatedPseudoVersion));
+        var generatedPseudoVersion = await generateMetadata(pseudoVersion);
+        res.send(generatedPseudoVersion);
     } catch(errGenerate) {
         if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
         else res.status(424).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));

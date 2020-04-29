@@ -8,7 +8,7 @@ mongoose = require('mongoose'),
 User = require('./api/models/userModel'),
 RestApi = require('./api/models/restApiModel'),
 Provider = require('./api/models/providerModel')
-ContributionHistory = require('./api/models/contributionHistoryModel'),
+HistoryContribution = require('./api/models/historyContributionModel'),
 // admin = require('firebase-admin'),
 // serviceAccount = require("./acme-explorer-6415d-firebase-adminsdk-ea57g-024809d2fe"),
 bodyParser = require('body-parser');
@@ -49,13 +49,13 @@ admin.initializeApp({
     databaseURL: "https://tfm-api-repositorio.firebaseio.com"
 });
 
-var contributionHistoryRoutes = require('./api/routes/contributionHistoryRoutes'),
+var historyContributionRoutes = require('./api/routes/historyContributionRoutes'),
 providerRoutes = require('./api/routes/providerRoutes'),
 restApiRoutes = require('./api/routes/restApiRoutes'),
 userRoutes = require('./api/routes/userRoutes'),
 oasDocRoutes = require('./api/routes/oasDocRoutes');
  
-contributionHistoryRoutes(app);
+historyContributionRoutes(app);
 providerRoutes(app);
 restApiRoutes(app);
 userRoutes(app);

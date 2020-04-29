@@ -96,10 +96,11 @@ function aggregateScores(restApi) {
 function rankRestApis(keywords, restApis) {
     keywords = keywords.split(' ').map(keyword => stemmer(keyword));
     var restApisNames = restApis.map(restApi => restApi.metadata.name ? restApi.metadata.name : '');
-    var restApisCategories = restApis.map(restApi => restApi.metadata.category ? restApi.metadata.category.join(' ') : '');
+    var restApisCategories = restApis.map(restApi => restApi.metadata.category != null ? typeof(restApi.metadata.category) == 'string' ? restApi.metadata.category : restApi.metadata.category.join(' ') : '');
     var restApisText = restApis.map(
         restApi => restApi.metadata.name + " " + restApi.metadata.description + " " +
-        (restApi.metadata.category != null ? restApi.metadata.category.join(' ') : '') + " " + (restApi.metadata.brand != null ? restApi.metadata.brand.name : '') + " " +
+        (restApi.metadata.category != null ? typeof(restApi.metadata.category) == 'string' ? restApi.metadata.category : restApi.metadata.category.join(' ') : '') + " " +
+        (restApi.metadata.brand != null ? restApi.metadata.brand.name : '') + " " +
         (restApi.metadata.availableChannel == null || restApi.metadata.availableChannel.length == 0 ? "" : " " + restApi.metadata.availableChannel.map(
             channel => channel.name + channel.description + " " + channel.disambiguatingDescription + (channel.providesService == null || channel.providesService.length == 0 ? "" : " " + channel.providesService.map(
                 entryPoint => entryPoint.name + entryPoint.description + " " + entryPoint.disambiguatingDescription

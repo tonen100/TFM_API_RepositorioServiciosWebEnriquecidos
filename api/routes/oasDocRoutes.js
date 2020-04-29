@@ -56,12 +56,12 @@ const options = {
         "./api/models/userModel.js",
         "./api/models/restApiModel.js",
         "./api/models/providerModel.js",
-        "./api/models/contributionHistoryModel.js",
+        "./api/models/historyContributionModel.js",
         "./api/controllers/userController.js",
         "./api/controllers/restApiController.js",
         "./api/controllers/versionController.js",
         "./api/controllers/providerController.js",
-        "./api/controllers/contributionHistoryController.js"
+        "./api/controllers/historyContributionController.js"
     ],
     // security: [{
     //   firebase: []

@@ -16,7 +16,7 @@ var NodeCache = require( "node-cache" );
 var restApisCache = new NodeCache( { stdTTL: 600, checkperiod: 60, useClones: true } );
 
 var auth = require('./authController');
-var contributionsHistory = require('./contributionHistoryController');
+var historyContributions = require('./historyContributionController');
 var documentClassifier = require('../documentClassifier');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
@@ -93,7 +93,7 @@ exports.list_all_restApis = async function(req, res) {
     var restApis;
     
     if(req.query.name && typeof(req.query.name) == 'string') {
-        restApis = await RestApis.find({ name: name }, { _id: 1 });
+        restApis = await RestApis.find({ name: req.query.name }, { _id: 1 });
         res.json(restApis);
         return;
     }
@@ -140,6 +140,7 @@ exports.list_all_restApis = async function(req, res) {
             filters.page = page;
             restApisCache.set(JSON.stringify(filters), restApis);
         } catch (err) {
+            console.log(err);
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         }
     }
@@ -208,7 +209,7 @@ exports.create_a_restApi = function(req, res) {
             }
         } else {
             var userId = await auth.getUserId(req.headers['authorization']);
-            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'ADD', 'RestAPI');
+            historyContributions.create_a_historyContribution(restApi._id, userId, 'ADD', 'RestAPI');
             restApi.versions = getLastVersion(restApi);
             res.status(201).send(restApi);
         }
@@ -329,9 +330,9 @@ exports.edit_a_restApi = function(req, res) {
                 if (restApi) {
                     if(updatedRestApi.name) restApi.name = updatedRestApi.name;
                     if(updatedRestApi.logoUrl) restApi.logoUrl = updatedRestApi.logoUrl;
-                    if(updatedRestApi.description) restApi.description = updatedRestApi.description;
+                    if(updatedRestApi.metadata && updatedRestApi.metadata.description) restApi.metadata.description = updatedRestApi.metadata.description;
                     if(updatedRestApi.businessModels) restApi.businessModels = updatedRestApi.businessModels;
-                    restApi.save(async function(err2, newRestApi) {
+                    RestApis.updateOne({ _id: restApi._id }, restApi, { runValidators: true }, async function(err2, _) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
                                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
@@ -342,9 +343,12 @@ exports.edit_a_restApi = function(req, res) {
                             }
                         } else {
                             var userId = await auth.getUserId(req.headers['authorization']);
-                            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'EDIT', 'RestAPI');
-                            newRestApi.versions = getLastVersion(newRestApi);
-                            res.send(newRestApi); // return the updated restApi
+                            historyContributions.create_a_historyContribution(restApi._id, userId, 'EDIT', 'RestAPI');
+                            restApi.versions = getLastVersion(restApi);
+                            res.send(restApi); // return the updated restApi
+                            if(restApisCache.get('read_a_restApi:' + id)) {
+                                restApisCache.del('read_a_restApi:' + id)
+                            }
                         }
                     });
                 } else {
@@ -427,6 +431,9 @@ exports.handle_restApi_blacklist = function(req, res) {
                         } else {
                             newRestApi.versions = getLastVersion(newRestApi);
                             res.send(newRestApi);
+                            if(restApisCache.get('read_a_restApi:' + id)) {
+                                restApisCache.del('read_a_restApi:' + id)
+                            }
                         }
                     });
                 } else {
@@ -495,7 +502,10 @@ exports.link_provider_to_api = function(req, res) {
                         restApi.versions = getLastVersion(restApi);
                         res.send(restApi);
                         var userId = await auth.getUserId(req.headers['authorization']);
-                        contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'EDIT', 'RestAPI');
+                        historyContributions.create_a_historyContribution(restApi._id, userId, 'EDIT', 'RestAPI');
+                        if(restApisCache.get('read_a_restApi:' + id)) {
+                            restApisCache.del('read_a_restApi:' + id)
+                        }
                     } else {
                         console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
                         res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) });
@@ -545,7 +555,10 @@ exports.delete_a_restApi = function(req, res) {
       } else {
         if(restApi) {
             var userId = await auth.getUserId(req.headers['authorization']);
-            contributionsHistory.create_a_contributionHistory(restApi._id, userId, 'DELETE', 'RestAPI', restApi.name);
+            historyContributions.create_a_historyContribution(restApi._id, userId, 'DELETE', 'RestAPI', restApi.name);
+            if(restApisCache.get('read_a_restApi:' + id)) {
+                restApisCache.del('read_a_restApi:' + id)
+            }
         }
         res.sendStatus(204);
       }
