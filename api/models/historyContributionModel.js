@@ -54,9 +54,14 @@ var historyContributionSchema = new Schema({
             'Version'
         ],
         required: 'Enter the type of the contribution realised'
-    }, name:{
+    }, name: {
+        type: String
+    }, number: {
         type: String
     }
 }, { strict: true });
+
+historyContributionSchema.index({ 'contributor_id': 1 });
+historyContributionSchema.index({ 'contribution_id': 1 });
 
 module.exports = mongoose.model('HistoryContributions', historyContributionSchema);

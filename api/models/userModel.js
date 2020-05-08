@@ -60,6 +60,9 @@ var userModel = new Schema({
     }, description: {
         type: String,
         default: null
+    }, logoUrl: {
+        type: String,
+        default: null
     }, banned: {
         type: Boolean,
         default: false

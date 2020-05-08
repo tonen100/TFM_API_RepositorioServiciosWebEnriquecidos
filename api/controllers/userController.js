@@ -44,8 +44,9 @@ var auth = require('./authController')
  *           content: {}
  */
 exports.list_all_users = function(req, res) {
+    var filters = req.query.username ? { username: req.query.username } : (req.query.email ? { email: req.query.email } : { banned: false });
     var lang = dict.getLang(req);
-    Users.find({ banned: false }, { password: 0 }, function(err, users) {
+    Users.find(filters, { password: 0 }, function(err, users) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
@@ -300,10 +301,13 @@ exports.edit_a_user = async function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) }) // internal server error
               } else {
                 if (user) {
-                    user = Object.assign(user, updatedUser)
+                    user.username = updatedUser.username
+                    user.description = updatedUser.description;
+                    user.logoUrl = updatedUser.logoUrl;
                     user.save(function(err2, newUser) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
+                                console.warn(err2)
                                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
                             }
                             else{
@@ -477,8 +481,8 @@ exports.delete_a_user = async function(req, res) {
  *          description: Internal error
  */
 exports.login_a_user = async function(req, res) {
-    var username = req.body.login;
-    var email = req.body.login;
+    var username = req.body.login ? req.body.login : req.body.username;
+    var email = req.body.login ? req.body.login : req.body.username;
     var password = req.body.password;
     var lang = dict.getLang(req);
     Users.findOne({ $or: [ { username: username }, { email: email } ], banned: false }, function (err, user) {

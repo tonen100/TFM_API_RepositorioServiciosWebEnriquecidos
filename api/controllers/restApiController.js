@@ -407,6 +407,9 @@ exports.edit_a_restApi = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.handle_restApi_blacklist = function(req, res) {
     var blacklisted = req.body ? req.body.blacklisted : undefined;
@@ -483,6 +486,8 @@ exports.handle_restApi_blacklist = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase: []
  */
 exports.link_provider_to_api = function(req, res) {
     var id = req.params.restApiId;
@@ -556,6 +561,7 @@ exports.delete_a_restApi = function(req, res) {
         if(restApi) {
             var userId = await auth.getUserId(req.headers['authorization']);
             historyContributions.create_a_historyContribution(restApi._id, userId, 'DELETE', 'RestAPI', restApi.name);
+            historyContributions.update_name_versions_contributions(restApi.versions, restApi.name);
             if(restApisCache.get('read_a_restApi:' + id)) {
                 restApisCache.del('read_a_restApi:' + id)
             }
