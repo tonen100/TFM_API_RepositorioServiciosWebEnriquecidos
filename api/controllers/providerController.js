@@ -13,7 +13,7 @@
 var mongoose = require('mongoose')
 Providers = mongoose.model('Providers');
 var auth = require('./authController');
-var contributionsHistory = require('./contributionHistoryController');
+var historyContributions = require('./historyContributionController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
@@ -28,6 +28,10 @@ var dict = new LangDictionnary();
  *        Retrieve all the providers
  *      operationId: getProviders
  *      parameters:
+ *        - name: name
+ *          in: query
+ *          description: The beginning of the name of the API to retrieve
+ *          required: false
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -45,13 +49,24 @@ var dict = new LangDictionnary();
  */
 exports.list_all_providers = function(req, res) {
     var lang = dict.getLang(req);
-    Providers.find({ blacklisted: false }, function(err, providers) {
+    var filters = { blacklisted: false };
+
+    var execFunction = function(err, providers) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
             res.json(providers);
         }
-    })
+    }
+    
+    if(req.query.include_blacklisted && typeof(req.query.include_blacklisted) == 'boolean') delete filters.blacklisted;
+    if(req.query.name && typeof(req.query.name) == 'string') {
+        filters.name = {$regex : "^" + req.query.name + ".*"};
+        Providers.find(filters).limit(8).exec(execFunction);
+    } else {
+        Providers.find(filters, execFunction);
+    }
+    
 }
 
 /**
@@ -122,7 +137,7 @@ exports.create_a_provider = function(req, res) {
             }
         } else {
             var userId = await auth.getUserId(req.headers['authorization']);
-            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'ADD', 'Provider');
+            historyContributions.create_a_historyContribution(provider._id, userId, 'ADD', 'Provider');
             res.status(201).send(provider);
         }
     });
@@ -251,7 +266,7 @@ exports.edit_a_provider = function(req, res) {
                             }
                         } else {
                             var userId = await auth.getUserId(req.headers['authorization']);
-                            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'EDIT', 'Provider');
+                            historyContributions.create_a_historyContribution(provider._id, userId, 'EDIT', 'Provider');
                             res.send(newProvider);
                         }
                     });
@@ -384,7 +399,7 @@ exports.delete_a_provider = function(req, res) {
       } else {
         if(provider) {
             var userId = await auth.getUserId(req.headers['authorization']);
-            contributionsHistory.create_a_contributionHistory(provider._id, userId, 'DELETE', 'Provider', provider.name);
+            historyContributions.create_a_historyContribution(provider._id, userId, 'DELETE', 'Provider', provider.name);
         }
         res.sendStatus(204);
       }

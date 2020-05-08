@@ -3,6 +3,7 @@ var router = express.Router()
 require('dotenv').config();
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const fireConf = require("../../firebase-config.json");
 
 // Swagger set up
 const options = {
@@ -37,14 +38,22 @@ const options = {
             example: "en-US"
           }
         },
-        // securitySchemes: {
-        //   firebase: {
-        //     "type": "http",
-        //     "scheme": "bearer",
-        //     "bearerFormat": "JWT",
-        //     "description": "Custom token retrieved by logging in ('/login')",
-        //   }
-        // }
+        securitySchemes: {
+          firebase: {
+            type: "oauth2",
+            name: "firebase",
+            flows: {
+              password: {
+                authorizationUrl: "https://accounts.google.com/o/oauth2/auth",
+                tokenUrl: "http://localhost:8080/v1/login",
+                scopes: {
+                  "write":"Edit the API state"
+                }
+              }
+            },
+            "description": "Custom token retrieved by logging in ('/login')",
+          }
+        },
       },
       servers: [
         {
@@ -56,23 +65,33 @@ const options = {
         "./api/models/userModel.js",
         "./api/models/restApiModel.js",
         "./api/models/providerModel.js",
-        "./api/models/contributionHistoryModel.js",
+        "./api/models/historyContributionModel.js",
         "./api/controllers/userController.js",
         "./api/controllers/restApiController.js",
+        "./api/controllers/versionController.js",
         "./api/controllers/providerController.js",
-        "./api/controllers/contributionHistoryController.js"
+        "./api/controllers/historyContributionController.js"
     ],
-    // security: [{
-    //   firebase: []
-    // }]
-  };
+  // security: [{
+  //   firebase: []
+  // }]
+};
 
 const specs = swaggerJsdoc(options);
 router.use("/docs", swaggerUi.serve);
 router.get(
     "/docs",
     swaggerUi.setup(specs, {
-        explorer: true
+        explorer: true,
+        swaggerOptions: {
+          oauth: {
+            client_id: fireConf.client_id,
+            appName: fireConf.project_id,
+            additionalQueryParams: {
+              apiKey: 'AIzaSyDLqZG0zNK1rZB7S_D_QVRI-KKDPmxNk8g'
+            }
+          }
+        }
     })
 );
 

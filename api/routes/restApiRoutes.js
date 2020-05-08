@@ -1,7 +1,6 @@
 'use strict';
 const express = require('express');
 var routerv1 = express.Router();
-// var routerv2 = express.Router();
 
 module.exports = function(app) {
     var restApisv1 = require('../controllers/restApiController');
@@ -28,11 +27,12 @@ module.exports = function(app) {
         .delete(auth.verifyUser(['Administrator', 'Contributor']), versionsv1.delete_a_restApi_version);
     routerv1.route('/restApis/:restApiId/versions/:versionId/blacklist')
        .patch(auth.verifyUser(['Administrator']), versionsv1.handle_restApi_version_blacklist);
+    routerv1.route('/restApis/:restApiId/versions/:versionId/depreciate')
+       .patch(auth.verifyUser(['Administrator', 'Contributor']), versionsv1.handle_restApi_version_depreciate)
 
-    app.use("/v1", routerv1)
+    /* front validation use only */
+    routerv1.route('/restApis/versions/generateMetadata')
+        .post(versionsv1.convert_to_OAS_and_metadata);
 
-    // var restApisv2 = require('../controllers/v2/restApiController');
-    // var auth = require('../controllers/v2/authController')
-
-    // app.use("/v2", routerv2)
+    app.use("/v1", routerv1);
 }

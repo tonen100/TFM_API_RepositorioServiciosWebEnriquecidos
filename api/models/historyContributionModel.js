@@ -6,7 +6,7 @@ var Schema = mongoose.Schema;
  * @swagger
  *  components:
  *    schemas:
- *      contributionHistory:
+ *      historyContribution:
  *        type: object
  *        required:
  *          - contribution_id
@@ -32,7 +32,7 @@ var Schema = mongoose.Schema;
  *            type: boolean
  *            enum: ['Provider', 'RestAPI', 'Version']
  */
-var contributionHistorySchema = new Schema({
+var historyContributionSchema = new Schema({
     contribution_id: {
         type: mongodb.ObjectID,
         required: 'Enter the id of the contribution'
@@ -54,9 +54,14 @@ var contributionHistorySchema = new Schema({
             'Version'
         ],
         required: 'Enter the type of the contribution realised'
-    }, name:{
+    }, name: {
+        type: String
+    }, number: {
         type: String
     }
 }, { strict: true });
 
-module.exports = mongoose.model('ContributionsHistory', contributionHistorySchema);
+historyContributionSchema.index({ 'contributor_id': 1 });
+historyContributionSchema.index({ 'contribution_id': 1 });
+
+module.exports = mongoose.model('HistoryContributions', historyContributionSchema);

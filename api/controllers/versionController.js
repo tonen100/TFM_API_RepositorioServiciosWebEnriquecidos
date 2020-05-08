@@ -15,12 +15,16 @@ RestApis = mongoose.model('RestApis');
 Versions = mongoose.model('Versions');
 var oas2SchemaOrg = require('oas2schema.org');
 var NodeCache = require( "node-cache" );
-var versionsCache = new NodeCache( { stdTTL: 60, checkperiod: 10, useClones: true } );
+var versionsCache = new NodeCache( { stdTTL: 30, checkperiod: 5, useClones: false } );
 
 var auth = require('./authController');
-var contributionsHistory = require('./contributionHistoryController');
+var historyContributions = require('./historyContributionController');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
+
+function getLastVersionNotBlacklisted(restAPI) {
+    return [restAPI.versions.filter(version => !version.blacklisted).sort((a, b) => b.createdAt - a.createdAt)[0]]
+}
 
 function generateMetadata(version) {
     if(version.originalDocumentation) {
@@ -53,6 +57,12 @@ function generateMetadata(version) {
  *          required: true
  *          schema:
  *            type: string
+ *        - name: number
+ *          in: query
+ *          description: number of the version of the rest API you want to extract
+ *          required: false
+ *          schema:
+ *            type: string
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -69,23 +79,22 @@ function generateMetadata(version) {
  *           content: {}
  */
 exports.list_all_restApi_versions = function(req, res) {
-    var id = req.params.versionId;
     var api_id = req.params.restApiId;
     var lang = dict.getLang(req);
-    if((cachedResponsed = versionsCache.get('list_all_restApi_versions:' + id)) != null) res.json(cachedResponsed);
+    var filters = { _id: api_id, blacklisted: false, };
+    if(!req.query.number && (cachedResponsed = versionsCache.get('list_all_restApi_versions:' + api_id)) != null) res.json(cachedResponsed);
     else {
-        RestApis.findById(api_id, function(err, restApi) {
+        RestApis.findOne(filters, { "versions.originalDocumentation": 0, "versions.oasDocumentation": 0, "versions.metadata": 0 }, function(err, restApi) {
             if(err) {
                 console.error(dict.get('ErrorGetDB', lang))
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
             } else if (restApi) {
-                restApi.versions.filter(version => version.blacklisted != false).forEach(version => {
-                    delete version.originalDocumentation;
-                    delete version.oasDocumentation;
-                    delete version.metadata;
-                })
-                res.json(restApi.versions);
-                versionsCache.set('list_all_restApi_versions:' + id, restApi.versions);
+                if(req.query.number) res.json(restApi.versions.filter(version => version.number == req.query.number));
+                else {
+                    const versions = restApi.versions.filter(version => version.blacklisted === false);
+                    res.json(versions);
+                    versionsCache.set('list_all_restApi_versions:' + api_id, restApi.versions);
+                }
             } else {
                 console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
                 res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', api_id) });
@@ -189,8 +198,9 @@ exports.create_a_restApi_version = function(req, res) {
                                         }
                                     } else {
                                         var userId = await auth.getUserId(req.headers['authorization']);
-                                        contributionsHistory.create_a_contributionHistory(version._id, userId, 'ADD', 'Version');
+                                        historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version', null, version.number);
                                         res.status(201).send(version);
+                                        versionsCache.del('list_all_restApi_versions:' + api_id);
                                     }
                                 });
                             }
@@ -339,7 +349,7 @@ exports.edit_a_restApi_version = function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
               } else {
                 if (restApi) {
-                    var version = restApi.versions.find(_version => _version._id == id);
+                    var version = restApi.versions.find(_version => _version._id == id && !_version.blacklisted);
                     if(version) {
                         if(updatedVersion.originalDocumentation && version.originalDocumentation != updatedVersion.originalDocumentation) {
                             version.originalDocumentation = updatedVersion.originalDocumentation;
@@ -368,8 +378,9 @@ exports.edit_a_restApi_version = function(req, res) {
                                 }
                             } else {
                                 var userId = await auth.getUserId(req.headers['authorization']);
-                                contributionsHistory.create_a_contributionHistory(id, userId, 'EDIT', 'Version');
+                                historyContributions.create_a_historyContribution(id, userId, 'EDIT', 'Version', null, version.number);
                                 res.status(200).send(newRestApi.versions.find(_version => _version.number == req.body.number));
+                                versionsCache.del('list_all_restApi_versions:' + api_id);
                             }
                         });                         
                     } else {
@@ -419,7 +430,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *              required:
  *                - blacklisted
  *              properties:
- *                banned:
+ *                blacklisted:
  *                  type: boolean
  *      responses:
  *        '200':
@@ -456,7 +467,110 @@ exports.handle_restApi_version_blacklist = function(req, res) {
                 if (restApi) {
                     var version = restApi.versions.find(_version => _version._id == id);
                     if(version) {
-                        version.blacklisted = blacklisted;
+                        if(getLastVersionNotBlacklisted(restApi).number == version.number) {
+                            version.blacklisted = blacklisted;
+                            restApi.metadata = getLastVersionNotBlacklisted(restApi).metadata;
+                        } else {
+                            version.blacklisted = blacklisted;
+                        }
+                        restApi.save(function(err2, newRestApi) {
+                            if(err2) {
+                                if(err2.name=='ValidationError') {
+                                    res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                                }
+                                else{
+                                    console.error(dict.get('ErrorUpdateDB', lang));
+                                    res.status(500).send({ err: dict.get('ErrorUpdateDB', lang) });
+                                }
+                            } else {
+                                res.status()
+                                res.status(200).send(newRestApi.versions.find(_version => _version.number == version.number));
+                            }
+                        });
+                    } else {
+                        console.warn(dict.get('RessourceNotFound', lang, 'version', id));
+                        res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'version', id) }); // not found
+                    }
+                } else {
+                    console.warn(dict.get('RessourceNotFound', lang, 'restApi', id));
+                    res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
+                }
+            }
+        });
+    }
+}
+
+/**
+ * @swagger
+ * path:
+ *  '/restApis/{restApiId}/versions/{versionId}/depreciate':
+ *    patch:
+ *      tags:
+ *        - Version
+ *      description: >-
+ *        Depreciate or undepreciate a version of a rest API
+ *      operationId: patchVersionDepreciate
+ *      parameters:
+ *        - name: restApiId
+ *          in: path
+ *          description: id of the rest API you wanna depreciate a version from
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - name: versionId
+ *          in: path
+ *          description: id of the version of a rest API you want to depreciate or undepreciate
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - $ref: '#/components/parameters/language'
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              required:
+ *                - deprecated
+ *              properties:
+ *                deprecated:
+ *                  type: boolean
+ *      responses:
+ *        '200':
+ *          description: Updated version
+ *          content:
+ *            application/json:
+ *              schema:
+ *                allOf:
+ *                - $ref: '#/components/schemas/version'
+ *        '404':
+ *           description: Version not found
+ *           content: Not Found
+ *        '422':
+ *           description: Incorrect body
+ *           content: {}
+ *        '500':
+ *           description: Internal server error
+ *           content: {}
+ */
+exports.handle_restApi_version_depreciate = function(req, res) {
+    var deprecated = req.body ? req.body.deprecated : undefined;
+    var api_id = req.params.restApiId;
+    var id = req.params.versionId;
+    var lang = dict.getLang(req);
+    if (deprecated == null || typeof(deprecated) != "boolean") {
+        console.warn("New PATCH request to /versions/id/depreciate without correct attribute deprecated, sending 422...");
+        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+    } else {
+        RestApis.findById(api_id, function(err, restApi) {
+            if (err) {
+                console.error('Error getting data from DB');
+                res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
+              } else {
+                if (restApi) {
+                    var version = restApi.versions.find(_version => _version._id == id);
+                    if(version) {
+                        version.deprecated = deprecated;
                         restApi.save(function(err2, newRestApi) {
                             if(err2) {
                                 if(err2.name=='ValidationError') {
@@ -468,6 +582,7 @@ exports.handle_restApi_version_blacklist = function(req, res) {
                                 }
                             } else {
                                 res.status(200).send(newRestApi.versions.find(_version => _version.number ==version.number));
+                                versionsCache.del('list_all_restApi_versions:' + api_id);
                             }
                         });
                     } else {
@@ -519,9 +634,9 @@ exports.delete_a_restApi_version = function(req, res) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
           } else {
             if (restApi) {
-                if(restApi.versions.find(_version => _version._id == id)) {
+                if(version = restApi.versions.find(_version => _version._id == id)) {
                     var userId = await auth.getUserId(req.headers['authorization']);
-                    contributionsHistory.create_a_contributionHistory(id, userId, 'DELETE', 'Version', restApi.name);   
+                    historyContributions.create_a_historyContribution(id, userId, 'DELETE', 'Version', restApi.name, version.number);   
                 }
                 restApi.versions = restApi.versions.filter(_version => _version._id != id);
                 restApi.save(function(err2, _) {
@@ -539,4 +654,20 @@ exports.delete_a_restApi_version = function(req, res) {
             }
         }
     });
+}
+
+/** For front validation only */
+exports.convert_to_OAS_and_metadata = async function(req, res) {
+    var pseudoVersion = {};
+    var lang = dict.getLang(req);
+    pseudoVersion.originalDocumentation = req.body.originalDocumentation;
+    pseudoVersion.urlAPI = req.body.urlAPI;
+    pseudoVersion.urlDoc = req.body.urlDoc
+    try {
+        var generatedPseudoVersion = await generateMetadata(pseudoVersion);
+        res.send(generatedPseudoVersion);
+    } catch(errGenerate) {
+        if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
+        else res.status(424).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
+    }
 }
