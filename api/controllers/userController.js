@@ -301,13 +301,14 @@ exports.edit_a_user = async function(req, res) {
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) }) // internal server error
               } else {
                 if (user) {
-                    user.username = updatedUser.username
-                    user.description = updatedUser.description;
-                    user.logoUrl = updatedUser.logoUrl;
+                    if(updatedUser.username) user.username = updatedUser.username
+                    if(updatedUser.description) user.description = updatedUser.description;
+                    if(updatedUser.logoUrl) user.logoUrl = updatedUser.logoUrl;
+                    if(updatedUser.email) user.email = updatedUser.email
+                    if(updatedUser.password) user.username = updatedUser.password;
                     user.save(function(err2, newUser) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
-                                console.warn(err2)
                                 res.status(422).send({ err: dict.get('ErrorSchema', lang) });
                             }
                             else{
