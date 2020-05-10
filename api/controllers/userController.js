@@ -292,7 +292,6 @@ exports.edit_a_user = async function(req, res) {
     if(id != await auth.getUserId(token)) {
         res.status(401).send({ err: dict.get('Unauthorized', lang) });
     } else if (!updatedUser) {
-        console.warn("New PUT request to /users/ without user, sending 400...");
         res.status(422).send({ err: dict.get('ErrorSchema', lang) });
     } else {
         Users.findById(id, { password: 0 }, function(err, user) {
