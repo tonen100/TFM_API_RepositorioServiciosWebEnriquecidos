@@ -242,7 +242,6 @@ exports.edit_a_provider = function(req, res) {
     var id = req.params.providerId;
     var lang = dict.getLang(req);
     if (!updatedProvider) {
-        console.warn("New PUT request to /providers/ without provider, sending 400...");
         res.status(422).send({ err: dict.get('ErrorSchema', lang) }); // bad request
     } else {
         Providers.findById(id, function(err, provider) {
