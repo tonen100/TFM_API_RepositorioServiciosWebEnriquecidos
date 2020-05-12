@@ -116,7 +116,7 @@ exports.list_all_restApi_versions = function(req, res) {
  *      parameters:
  *        - name: restApiId
  *          in: path
- *          description: id of the rest API you wanna retrieve versions from
+ *          description: id of the rest API you wanna add verion to
  *          required: true
  *          schema:
  *            type: string
@@ -162,6 +162,9 @@ exports.list_all_restApi_versions = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.create_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
@@ -298,7 +301,7 @@ exports.read_a_restApi_version = function(req, res) {
  *      parameters:
  *        - name: restApiId
  *          in: path
- *          description: id of the rest API you wanna retrieve versions from
+ *          description: id of the rest API you wanna update versions from
  *          required: true
  *          schema:
  *            type: string
@@ -333,6 +336,9 @@ exports.read_a_restApi_version = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.edit_a_restApi_version = function(req, res) {
     var updatedVersion = req.body;
@@ -405,7 +411,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *      tags:
  *        - Version
  *      description: >-
- *        Blacklist or remove from blacklist a version of a rest API
+ *        Blacklist or remove from blacklist a version of a rest API. Needs administrator privileges
  *      operationId: patchVersionBlacklist
  *      parameters:
  *        - name: restApiId
@@ -449,6 +455,9 @@ exports.edit_a_restApi_version = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.handle_restApi_version_blacklist = function(req, res) {
     var blacklisted = req.body ? req.body.blacklisted : undefined;
@@ -552,6 +561,9 @@ exports.handle_restApi_version_blacklist = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.handle_restApi_version_depreciate = function(req, res) {
     var deprecated = req.body ? req.body.deprecated : undefined;
@@ -609,13 +621,19 @@ exports.handle_restApi_version_depreciate = function(req, res) {
  *        Delete a specific version of a rest API
  *      operationId: deleteVersion
  *      parameters:
- *         - name: versionId
- *           in: path
- *           description: id of the version of a rest API you want to delete
- *           required: true
- *           schema:
- *             type: string
- *         - $ref: '#/components/parameters/language'
+ *        - name: restApiId
+ *          in: path
+ *          description: id of the rest API you want to delete a version from
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - name: versionId
+ *          in: path
+ *          description: id of the version of a rest API you want to delete
+ *          required: true
+ *          schema:
+ *            type: string
+ *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '204':
  *          description: No content
@@ -623,6 +641,9 @@ exports.handle_restApi_version_depreciate = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.delete_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;

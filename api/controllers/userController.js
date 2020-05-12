@@ -28,6 +28,14 @@ var auth = require('./authController')
  *        Retrieve all the users
  *      operationId: getUsers
  *      parameters:
+ *        - name: username
+ *          in: query
+ *          description: The exact username of the user to retrieve
+ *          required: false
+ *        - name: email
+ *          in: query
+ *          description: The exact email of the user to retrieve
+ *          required: false
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -131,7 +139,7 @@ exports.create_a_contributor = function(req, res) {
  *      tags:
  *        - User
  *      description: >-
- *        Create a new user (any type). Need administrator privileges
+ *        Create a new user (any type). Needs administrator privileges
  *      operationId: postUsers
  *      parameters:
  *        - $ref: '#/components/parameters/language'
@@ -171,6 +179,9 @@ exports.create_a_contributor = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.create_a_user = function(req, res) {
     var new_user = new Users(req.body);
@@ -283,6 +294,9 @@ exports.read_a_user = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.edit_a_user = async function(req, res) {
     var updatedUser = req.body;
@@ -337,7 +351,7 @@ exports.edit_a_user = async function(req, res) {
  *      tags:
  *        - User
  *      description: >-
- *        Ban or unban an user
+ *        Ban or unban an user. Needs administrator privileges
  *      operationId: patchUserBanishment
  *      parameters:
  *         - name: userId
@@ -375,6 +389,9 @@ exports.edit_a_user = async function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.handle_user_banishment = function(req, res) {
     var banned = req.body ? req.body.banned : undefined;
@@ -407,7 +424,7 @@ exports.handle_user_banishment = function(req, res) {
  *      tags:
  *        - User
  *      description: >-
- *        Delete a specific user
+ *        Delete a specific user. Needs administrator privileges
  *      operationId: deleteUser
  *      parameters:
  *         - name: userId
@@ -424,6 +441,9 @@ exports.handle_user_banishment = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.delete_a_user = async function(req, res) {
     var id = req.params.userId;

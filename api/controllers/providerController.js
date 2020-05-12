@@ -30,7 +30,7 @@ var dict = new LangDictionnary();
  *      parameters:
  *        - name: name
  *          in: query
- *          description: The beginning of the name of the API to retrieve
+ *          description: The beginning of the name of the provider to retrieve
  *          required: false
  *        - $ref: '#/components/parameters/language'
  *      responses:
@@ -122,6 +122,9 @@ exports.list_all_providers = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.create_a_provider = function(req, res) {
     var new_provider = new Providers(req.body);
@@ -236,6 +239,9 @@ exports.read_a_provider = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.edit_a_provider = function(req, res) {
     var updatedProvider = req.body;
@@ -287,7 +293,7 @@ exports.edit_a_provider = function(req, res) {
  *      tags:
  *        - Provider
  *      description: >-
- *        Blacklist or remove from blacklist a provider
+ *        Blacklist or remove from blacklist a provider. Needs administrator privileges
  *      operationId: patchProviderBlacklist
  *      parameters:
  *         - name: providerId
@@ -325,6 +331,9 @@ exports.edit_a_provider = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.handle_provider_blacklist = async function(req, res) {
     var blacklisted = req.body ? req.body.blacklisted : undefined;
@@ -370,7 +379,7 @@ exports.handle_provider_blacklist = async function(req, res) {
  *      tags:
  *        - Provider
  *      description: >-
- *        Delete a specific provider
+ *        Delete a specific provider. Needs administrator privileges
  *      operationId: deleteProvider
  *      parameters:
  *         - name: providerId
@@ -387,6 +396,9 @@ exports.handle_provider_blacklist = async function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.delete_a_provider = function(req, res) {
     var id = req.params.providerId;

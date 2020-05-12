@@ -194,6 +194,9 @@ exports.list_all_restApis = async function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.create_a_restApi = function(req, res) {
     var new_restApi = new RestApis(req.body);
@@ -313,6 +316,9 @@ exports.read_a_restApi = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.edit_a_restApi = function(req, res) {
     var updatedRestApi = req.body;
@@ -369,7 +375,7 @@ exports.edit_a_restApi = function(req, res) {
  *      tags:
  *        - RestApi
  *      description: >-
- *        Blacklist or remove from blacklist a rest API
+ *        Blacklist or remove from blacklist a rest API. Needs administrator privileges
  *      operationId: patchRestApiBlacklist
  *      parameters:
  *         - name: restApiId
@@ -487,7 +493,8 @@ exports.handle_restApi_blacklist = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase: []
+ *        firebase:
+ *          - write
  */
 exports.link_provider_to_api = function(req, res) {
     var id = req.params.restApiId;
@@ -532,7 +539,7 @@ exports.link_provider_to_api = function(req, res) {
  *      tags:
  *        - RestApi
  *      description: >-
- *        Delete a specific rest API
+ *        Delete a specific rest API. Needs administrator privileges
  *      operationId: deleteRestApi
  *      parameters:
  *         - name: restApiId
@@ -549,6 +556,9 @@ exports.link_provider_to_api = function(req, res) {
  *        '500':
  *           description: Internal server error
  *           content: {}
+ *      security:
+ *        firebase:
+ *          - write
  */
 exports.delete_a_restApi = function(req, res) {
     var id = req.params.restApiId;
