@@ -30,7 +30,7 @@ RestAPIs = require('./restApiModel');
  *            items:
  *              type: string
  *              pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
- *              description: external references (websites) to the provider (main website for example, or urls of distincts projects that are relevant in the topic of Web APIs)
+ *            description: external references (websites) to the provider (main website for example, or urls of distincts projects that are relevant in the topic of Web APIs)
  *          blacklisted:
  *            type: boolean
  *            description: has this provider been blacklisted (if true, no operations can be made on this ressource or subsequents rssources other than by an administrator)

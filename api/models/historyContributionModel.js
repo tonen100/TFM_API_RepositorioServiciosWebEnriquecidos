@@ -18,19 +18,26 @@ var Schema = mongoose.Schema;
  *            type: string
  *          contribution_id:
  *            type: string
+ *            description: Id of the ressource (or contribution) on which the action has been performed
  *          contributor_id:
  *            type: array
+ *            description: Id of the user (or contributor) that performed the action
  *            items:
  *              type: string
  *          date:
  *            type: string
  *            format: date
+ *            description: Date on which the action has been performed
  *          action:
  *            type: boolean
  *            enum: ['ADD', 'EDIT', 'DELETE']
+ *            description: Type of action performed
  *          typeContribution:
  *            type: boolean
  *            enum: ['Provider', 'RestAPI', 'Version']
+ *          name:
+ *            type: string
+ *            description: Name of the ressource (or contribution) on which the action has been performed
  */
 var historyContributionSchema = new Schema({
     contribution_id: {
