@@ -36,20 +36,20 @@ describe('RestApis Integration tests', () => {
         });
 
     var getMostRecentFunc = (count, done, callback) => chai
-    .request(app)
-    .get('/v1/restApis/recent' +
-        (count ? "?count=" + count : "")
-    .set('authorization', firebaseFakeToken)
-    .send()
-    .end((err, res) => {
-        if (err) {
-            done(err);
-        } 
-        else {
-            callback(res);
-            done();
-        }
-    });
+        .request(app)
+        .get('/v1/restApis/recent' +
+            (count ? "?count=" + count : ""))
+        .set('authorization', firebaseFakeToken)
+        .send()
+        .end((err, res) => {
+            if (err) {
+                done(err);
+            } 
+            else {
+                callback(res);
+                done();
+            }
+        });
 
     var getByIdFunc = (done, callback) =>
         chai
