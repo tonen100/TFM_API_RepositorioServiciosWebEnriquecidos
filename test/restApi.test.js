@@ -35,6 +35,22 @@ describe('RestApis Integration tests', () => {
             }
         });
 
+    var getMostRecentFunc = (count, done, callback) => chai
+    .request(app)
+    .get('/v1/restApis/recent' +
+        (count ? "?count=" + count : "")
+    .set('authorization', firebaseFakeToken)
+    .send()
+    .end((err, res) => {
+        if (err) {
+            done(err);
+        } 
+        else {
+            callback(res);
+            done();
+        }
+    });
+
     var getByIdFunc = (done, callback) =>
         chai
         .request(app)
@@ -282,6 +298,18 @@ describe('RestApis Integration tests', () => {
                     }
                 })
             ));
+        });
+        it('should return the most recent api', done => {
+            postFunc({
+                "name": "Facebook",
+                "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Facebook_logo_36x36.svg/1200px-Facebook_logo_36x36.svg.png",
+                "provider_id": provider2Id,
+                "businessModels": ["Free"]
+            }, (res2) => getMostRecentFunc(1, () => {}, res => {
+                expect(res.body.length).to.eql(1);
+                expect(res.body[res.body.length - 1].name).to.eql("Facebook");
+                deleteByIdFunc(done, res2.body._id, (res) => {});
+            }, providerId));
         });
     });
 

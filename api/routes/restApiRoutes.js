@@ -10,6 +10,8 @@ module.exports = function(app) {
     routerv1.route('/restApis')
         .get(restApisv1.list_all_restApis)
         .post(auth.verifyUser(['Administrator', 'Contributor']), restApisv1.create_a_restApi);
+    routerv1.route('/restApis/recent')
+        .get(restApisv1.list_most_recents_restApis)
     routerv1.route('/restApis/:restApiId')
         .get(restApisv1.read_a_restApi)
         .put(auth.verifyUser(['Administrator', 'Contributor']), restApisv1.edit_a_restApi)
