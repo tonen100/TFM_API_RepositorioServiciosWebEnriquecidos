@@ -87,7 +87,7 @@ function getLastVersion(restAPI) {
 exports.list_all_restApis = async function(req, res) {
     var lang = dict.getLang(req);
     var page = req.query.page ? req.query.page : 0;
-    var countPerPage = 10;
+    var countPerPage = 5;
     page = Math.max(0, page);
     var filters = { blacklisted: false };
     var keywords = null;
@@ -194,7 +194,6 @@ exports.list_most_recents_restApis = async function(req, res) {
             console.log(err);
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else if(resAggregate) {
-            console.log(resAggregate)
             res.json(resAggregate);
         } else {
             res.json([]);
