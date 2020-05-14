@@ -12,6 +12,7 @@
 
 var mongoose = require('mongoose')
 RestApis = mongoose.model('RestApis');
+HistoryContributions = mongoose.model('HistoryContributions');
 var NodeCache = require( "node-cache" );
 var restApisCache = new NodeCache( { stdTTL: 600, checkperiod: 60, useClones: true } );
 
@@ -86,7 +87,7 @@ function getLastVersion(restAPI) {
 exports.list_all_restApis = async function(req, res) {
     var lang = dict.getLang(req);
     var page = req.query.page ? req.query.page : 0;
-    var countPerPage = 10;
+    var countPerPage = 5;
     page = Math.max(0, page);
     var filters = { blacklisted: false };
     var keywords = null;
@@ -144,6 +145,60 @@ exports.list_all_restApis = async function(req, res) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         }
     }
+}
+
+exports.list_most_recents_restApis = async function(req, res) {
+    var lang = dict.getLang(req);
+    var filtersApis =  { "restApi.blacklisted" : false };
+    var filtersContributions =  {
+        action : "ADD",
+        typeContribution: "RestAPI"
+    };
+    var count = req.query.count && parseInt(req.query.count) ? parseInt(req.query.count) : 5;
+    HistoryContributions.aggregate([
+        {
+            $match: filtersContributions
+        }, {
+            $lookup: {
+                from: "restapis",
+                localField: "contribution_id",
+                foreignField: "_id",
+                as: "restApi"
+            }
+        }, {
+            $match: filtersApis
+        }, {
+            $sort: {
+                date: -1
+            }
+        }, {
+            $limit: count
+        }, {
+            $project: {
+                api: {
+                    $arrayElemAt: ["$restApi", 0]
+                }
+            }
+        }, {
+            $project: {
+                _id: "$api._id", 
+                name: "$api.name",
+                metadata: "$api.metadata",
+                logoUrl: "$api.logoUrl",
+                businessModels: "$api.businessModels",
+                provider_id: "$api.provider_id"
+            }
+        }
+    ],  function(err, resAggregate) {
+        if (err) {
+            console.log(err);
+            res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
+        } else if(resAggregate) {
+            res.json(resAggregate);
+        } else {
+            res.json([]);
+        }
+    });
 }
 
 /**
@@ -271,7 +326,7 @@ exports.read_a_restApi = function(req, res) {
                 res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', id) }); // not found
             }
         }
-      });
+    });
 }
 
 /**
