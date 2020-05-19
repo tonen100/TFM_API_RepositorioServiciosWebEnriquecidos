@@ -318,7 +318,7 @@ exports.edit_a_user = async function(req, res) {
                     if(updatedUser.description) user.description = updatedUser.description;
                     if(updatedUser.logoUrl) user.logoUrl = updatedUser.logoUrl;
                     if(updatedUser.email) user.email = updatedUser.email
-                    if(updatedUser.password) user.username = updatedUser.password;
+                    if(updatedUser.password) user.password = updatedUser.password;
                     user.save(function(err2, newUser) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
