@@ -97,6 +97,10 @@ exports.list_all_restApis = async function(req, res) {
         restApis = await RestApis.find({ name: req.query.name }, { _id: 1 });
         res.json(restApis);
         return;
+    } else if(req.query.all) {
+        restApis = await RestApis.find(filters, { _id: 1, name: 1 });
+        res.json(restApis);
+        return;
     }
     if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
     if(req.query.keywords && typeof(req.query.keywords) == 'string') {
