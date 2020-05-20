@@ -176,9 +176,8 @@ exports.create_a_restApi_version = function(req, res) {
         } else {
             if (restApi) {
                 if (!restApi.versions.find(version => version.number == req.body.number)) {
-                    var newVersion = new Versions(req.body);
                     try {
-                        newVersion = await generateMetadata(newVersion);
+                        var newVersion = new Versions(await generateMetadata(req.body));
                         newVersion.save((err2, version) => {
                             if(err2) {
                                 if(err2.name=='ValidationError') {

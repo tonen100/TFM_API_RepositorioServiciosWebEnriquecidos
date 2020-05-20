@@ -61,7 +61,7 @@ exports.list_all_providers = function(req, res) {
     
     if(req.query.include_blacklisted && typeof(req.query.include_blacklisted) == 'boolean') delete filters.blacklisted;
     if(req.query.name && typeof(req.query.name) == 'string') {
-        filters.name = {$regex : "^" + req.query.name + ".*"};
+        filters.name = new RegExp("^" + req.query.name + ".*", 'i');
         Providers.find(filters).limit(8).exec(execFunction);
     } else {
         Providers.find(filters, execFunction);
