@@ -6,23 +6,41 @@ var admin = require('firebase-admin');
 var LangDictionnary = require('../langDictionnary');
 var dict = new LangDictionnary();
 
+exports.getUserRole = async function (idToken) {
+    if(idToken) {
+        idToken = idToken.replace('Bearer ', '');
+
+        var userFromFB = await admin.auth().verifyIdToken(idToken);
+    
+        var uid = userFromFB.uid;
+        // var auth_time = userFromFB.auth_time;
+        // var exp = userFromFB.exp;
+    
+        var mongoUser = await User.findOne({ email: uid });
+        if (!mongoUser) { return null; }
+        else { return mongoUser.role };
+    } else return null;    
+}
+
 exports.getUserId = async function (idToken) {
-    idToken = idToken.replace('Bearer ', '');
-    var id = null;
+    if(idToken) {
+        idToken = idToken.replace('Bearer ', '');
+        var id = null;
 
-    var userFromFB = await admin.auth().verifyIdToken(idToken);
+        var userFromFB = await admin.auth().verifyIdToken(idToken);
 
-    var uid = userFromFB.uid;
-    // var auth_time = userFromFB.auth_time;
-    // var exp = userFromFB.exp;
+        var uid = userFromFB.uid;
+        // var auth_time = userFromFB.auth_time;
+        // var exp = userFromFB.exp;
 
-    var mongoUser = await User.findOne({ email: uid });
-    if (!mongoUser) { return null; }
+        var mongoUser = await User.findOne({ email: uid });
+        if (!mongoUser) { return null; }
 
-    else {
-        id = mongoUser._id;
-        return id;
-    }
+        else {
+            id = mongoUser._id;
+            return id;
+        }
+    } else return null;
 }
 
 

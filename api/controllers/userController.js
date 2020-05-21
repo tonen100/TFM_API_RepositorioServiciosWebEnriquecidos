@@ -28,6 +28,10 @@ var auth = require('./authController')
  *        Retrieve all the users
  *      operationId: getUsers
  *      parameters:
+ *        - name: all
+ *          in: query
+ *          description: A boolean describing if all users should be returned (even banned ones). Need Administrator privileges.
+ *          required: false
  *        - name: username
  *          in: query
  *          description: The exact username of the user to retrieve
@@ -51,16 +55,32 @@ var auth = require('./authController')
  *           description: Internal server error
  *           content: {}
  */
-exports.list_all_users = function(req, res) {
-    var filters = req.query.username ? { username: req.query.username } : (req.query.email ? { email: req.query.email } : { banned: false });
+exports.list_all_users = async function(req, res) {
     var lang = dict.getLang(req);
-    Users.find(filters, { password: 0 }, function(err, users) {
+    var filters;
+    var projection;
+    if(req.query.all) {
+        var lang = dict.getLang(req);
+        var token = req.headers['authorization'];
+        if(await auth.getUserRole(token) === 'Administrator') {
+            filters = {};
+            projection = { username: 1, email: 1, role: 1, banned: 1, createdAt: 1 };
+        } else {
+            console.log(await auth.getUserRole(token))
+            res.status(403).send({ err: dict.get('Forbidden', lang) });
+            return;
+        }
+    } else {
+        filters = req.query.username ? { username: req.query.username } : (req.query.email ? { email: req.query.email } : { banned: false });
+        projection = { password: 0 };
+    }
+    Users.find(filters, projection, function(err, users) {
         if(err) {
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else {
             res.json(users);
         }
-    })
+    });
 }
 
 /**
