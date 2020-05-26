@@ -76,7 +76,6 @@ Versions = mongoose.model('Versions');
  *        type: object
  *        required:
  *          - name
- *          - businessModels
  *        properties:
  *          id:
  *            type: string
@@ -90,10 +89,6 @@ Versions = mongoose.model('Versions');
  *            type: string
  *            pattern: /^http(s)?://([\w-]+.)+[\w-]+(/[\w- ./?%&=])?$/
  *            description: Absolute URL to the logo of the API
- *          businessModels:
- *            type: string
- *            description: List of the type of offers available for consumers
- *            enum: ['Free', 'FreeWithLimitations', 'FreeTrialVersion', 'FlatRateAllInclusive', 'FlatRatesWithLimitations', 'Billing']
  *          blacklisted:
  *            type: boolean
  *            description: has this API been blacklisted (if true, no operations can be made on this ressource or subsequents rssources other than by an administrator)
@@ -114,17 +109,7 @@ var restApiSchema = new Schema({
         type: Object
     }, logoUrl: {
         type: String
-    }, businessModels: [{
-        type: String,
-        enum: [
-            'Free',
-            'FreeWithLimitations',
-            'FreeTrialVersion',
-            'FlatRateAllInclusive',
-            'FlatRatesWithLimitations',
-            'Billing'
-        ]
-    }], blacklisted: {
+    }, blacklisted: {
         type: Boolean,
         default: false
     }, versions: [
@@ -145,6 +130,6 @@ restApiSchema.pre('deleteOne', async function(callback){
 
 restApiSchema.index({ 'blacklisted': -1, 'name': 1 });
 restApiSchema.index({ 'blacklisted': -1, 'provider_id': 1 });
-restApiSchema.index({ 'blacklisted': -1, 'business_models': 1, 'name': "text", 'description': "text" });
+restApiSchema.index({ 'blacklisted': -1, 'name': "text", 'description': "text" });
 
 module.exports = mongoose.model('RestApis', restApiSchema);

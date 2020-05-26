@@ -186,7 +186,6 @@ describe('RestApis Integration tests', () => {
             "name": "Twitter",
             "logoUrl": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c8/Twitter_Bird.svg/1200px-Twitter_Bird.svg.png",
             "provider_id": providerId,
-            "businessModels": ["Free"]
         }, (res) => {
             restApiId = res.body._id;
             resPost = res;
@@ -201,7 +200,6 @@ describe('RestApis Integration tests', () => {
         });
         it('should return the right restApi', done => {
             expect(resPost.body.name).to.eql("Twitter");
-            expect(resPost.body.businessModels[0]).to.eql("Free");
             done();
         });
     });
@@ -218,47 +216,19 @@ describe('RestApis Integration tests', () => {
                 "name": "Facebook",
                 "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Facebook_logo_36x36.svg/1200px-Facebook_logo_36x36.svg.png",
                 "provider_id": provider2Id,
-                "businessModels": ["Free"]
             }, (res2) => getAllFunc(() => {}, res => {
                 expect(res.body.length).to.eql(1);
                 expect(res.body[res.body.length - 1].name).to.eql("Twitter");
                 deleteByIdFunc(done, res2.body._id, (res) => {});
             }, providerId));
         });
-        it('should return the right restApis filtered by business model', done => {
-            postFunc({
-                "name": "AWS Security Hub",
-                "logoUrl": "https://d0.awsstatic.com/security-center/AWSSecurity.jpg",
-                "provider_id": provider2Id,
-                "businessModels": ["Billing"]
-            }, (res2) => getAllFunc(() => {}, res => {
-                expect(res.body.length).to.eql(1);
-                expect(res.body[res.body.length - 1].name).to.eql("AWS Security Hub");
-                deleteByIdFunc(done, res2.body._id, (res) => {});
-            }, null, ["Billing"]));
-        });
-        it('should return the right restApis filtered by various business models', done => {
-            postFunc({
-                "name": "AWS Security Hub",
-                "logoUrl": "https://d0.awsstatic.com/security-center/AWSSecurity.jpg",
-                "provider_id": provider2Id,
-                "businessModels": ["Free", "FreeTrialVersion", "Billing"]
-            }, (res2) => getAllFunc(() => {}, res => {
-                expect(res.body.length).to.eql(2);
-                expect(res.body.find(restApi => restApi.name == ("Twitter"))).to.not.be.null;
-                expect(res.body.find(restApi => restApi.name == ("AWS Security Hub"))).to.not.be.null;
-                deleteByIdFunc(done, res2.body._id, (res) => {});
-            }, null, ["Free", "Billing"]));
-        });
         it('should return the right restApis filtered by keywords', done => {
             postFunc({
                 "name": "AWS Security Hub",
                 "provider_id": provider2Id,
-                "businessModels": ["Billing"]
             }, (res3) => postFunc({
                 "name": "AWS Migration Hub",
                 "provider_id": provider2Id,
-                "businessModels": ["Billing"]
             }, (res2) => chai
                 .request(app)
                 .post('/v1/restApis/' + res3.body._id + '/versions/')
@@ -304,7 +274,6 @@ describe('RestApis Integration tests', () => {
                 "name": "Facebook",
                 "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Facebook_logo_36x36.svg/1200px-Facebook_logo_36x36.svg.png",
                 "provider_id": provider2Id,
-                "businessModels": ["Free"]
             }, (res2) => getMostRecentFunc(1, () => {}, res => {
                 expect(res.body.length).to.eql(1);
                 expect(res.body[res.body.length - 1].name).to.eql("Facebook");
@@ -323,16 +292,13 @@ describe('RestApis Integration tests', () => {
     });
 
     describe('PUT RestApis id', () => {
-        var newBM = ['FreeTrialVersion', 'Billing'];
         var correctRestApi = {
             "_id": restApiId,
             "name": "TwitterHub",
-            "businessModels": newBM
         };
         var wrongRestApi = {
             "_id": restApiId,
-            "name": "Twitter",
-            "businessModels": ["NotABusinessModel"]
+            "name": "Facebook"
         };
         it('should return status code 200', done => {
             putByIdFunc(done, correctRestApi, res => expect(res).to.have.status(200));
@@ -340,11 +306,14 @@ describe('RestApis Integration tests', () => {
         it('should return the right restApi', done => {
             putByIdFunc(done, correctRestApi,
                 res => expect(res.body.name).to.eql("TwitterHub")
-                && expect(JSON.stringify(res.body.businessModels)).to.eql(JSON.stringify(newBM))
             );
         });
-        it('should return status code 422', done => {
-            putByIdFunc(done, wrongRestApi, res => expect(res).to.have.status(422));
+        it('should return status code 500', done => {
+            postFunc({
+                "name": "Facebook",
+                "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Facebook_logo_36x36.svg/1200px-Facebook_logo_36x36.svg.png",
+                "provider_id": provider2Id,
+            }, (res2) => putByIdFunc(done, wrongRestApi, res => expect(res).to.have.status(500)));
         });
     });
 

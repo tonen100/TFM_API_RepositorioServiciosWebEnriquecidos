@@ -102,8 +102,8 @@ function rankRestApis(keywords, restApis) {
         (restApi.metadata.category != null ? typeof(restApi.metadata.category) == 'string' ? restApi.metadata.category : restApi.metadata.category.join(' ') : '') + " " +
         (restApi.metadata.brand != null ? restApi.metadata.brand.name : '') + " " +
         (restApi.metadata.availableChannel == null || restApi.metadata.availableChannel.length == 0 ? "" : " " + restApi.metadata.availableChannel.map(
-            channel => channel.name + channel.description + " " + channel.disambiguatingDescription + (channel.providesService == null || channel.providesService.length == 0 ? "" : " " + channel.providesService.map(
-                entryPoint => entryPoint.name + entryPoint.description + " " + entryPoint.disambiguatingDescription
+            channel => channel.name + channel.description + " " + channel.disambiguatingDescription + (channel.potentialAction == null || channel.potentialAction.length == 0 ? "" : " " + channel.potentialAction.map(
+                action => action.target ? action.target.name + " " + action.target.description + " " + action.target.disambiguatingDescription : ''
             ).join(' '))
         ).join(' '))
     );

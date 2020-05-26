@@ -132,8 +132,7 @@ describe('RestApis Versions Integration tests', () => {
                                 .send({
                                     "name": "Twitter",
                                     "logoUrl": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c8/Twitter_Bird.svg/1200px-Twitter_Bird.svg.png",
-                                    "provider_id": providerId,
-                                    "businessModels": ["Free"]
+                                    "provider_id": providerId
                                 })
                                 .end((err, res) => {
                                     if (err) {

@@ -116,14 +116,21 @@ exports.list_all_restApis = async function(req, res) {
             { 'metadata.description': new RegExp(keyword, 'i')}
         ));
     }
-    if(req.query.businessModels && typeof(req.query.businessModels) == 'string') filters.businessModels = req.query.businessModels.split(',').sort((a, b) => ('' + a).localeCompare(b));
+    if(req.query.businessModels) {
+        if(!filters.metadata) filters.metadata = {};
+        if(typeof(req.query.businessModels) == 'object') {
+            filters.metadata.offers = { identifier: req.query.businessModels.split(',').sort((a, b) => ('' + a).localeCompare(b)) };
+        } else if(typeof(req.query.businessModels) == 'string') {
+            filters.metadata.offers = { identifier: req.query.businessModels }
+        }
+    }
     if((cachedResponsed = restApisCache.get(JSON.stringify(filters))) != null) res.json(cachedResponsed);
     else {
         try {
-            if(req.query.businessModels && typeof(req.query.businessModels) == 'string') {
-                var businessModels = filters.businessModels;
+            if(req.query.businessModels && typeof(req.query.businessModels) == 'object') {
+                var businessModels = filters.metadata.businessModels;
                 restApis = await Promise.all(businessModels.map(async (businessModel) => {
-                    filters.businessModels = businessModel;
+                    filters.metadata.offers = { identifier: businessModel };
                     if(keywords)
                         restApisPartial = await RestApis.find(filters, { versions: 0 });
                     else
@@ -132,7 +139,7 @@ exports.list_all_restApis = async function(req, res) {
                 }));
                 var seen = {}; // We flattern the arrays of arrays and remove duplicates
                 restApis = restApis.flat().filter(item => seen.hasOwnProperty(item._id) ? false : (seen[item._id] = true));
-                filters.businessModels = businessModels;
+                filters.metadata.offers = businessModels;
             } else {
                 if(keywords)
                     restApis = await RestApis.find(filters, { versions: 0 });
@@ -189,7 +196,6 @@ exports.list_most_recents_restApis = async function(req, res) {
                 name: "$api.name",
                 metadata: "$api.metadata",
                 logoUrl: "$api.logoUrl",
-                businessModels: "$api.businessModels",
                 provider_id: "$api.provider_id"
             }
         }
@@ -395,8 +401,10 @@ exports.edit_a_restApi = function(req, res) {
                 if (restApi) {
                     if(updatedRestApi.name) restApi.name = updatedRestApi.name;
                     if(updatedRestApi.logoUrl) restApi.logoUrl = updatedRestApi.logoUrl;
-                    if(updatedRestApi.metadata && updatedRestApi.metadata.description) restApi.metadata.description = updatedRestApi.metadata.description;
-                    if(updatedRestApi.businessModels) restApi.businessModels = updatedRestApi.businessModels;
+                    if(restApi.metadata && updatedRestApi.metadata && updatedRestApi.metadata.description) restApi.metadata.description = updatedRestApi.metadata.description;
+                    if(restApi.metadata && updatedRestApi.businessModels) restApi.metadata.offers = updatedRestApi.businessModels.map(
+                        businessModel => { return { identifier: businessModel, type: businessModel.replace(/([A-Z][a-z]+)/g, ' $1') } }
+                    );
                     RestApis.updateOne({ _id: restApi._id }, restApi, { runValidators: true }, async function(err2, _) {
                         if (err2) {
                             if(err2.name=='ValidationError') {
