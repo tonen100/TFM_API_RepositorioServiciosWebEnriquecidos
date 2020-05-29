@@ -18,7 +18,6 @@ class Provider {
 class RestApi {
    name: String
    logoUrl: Image
-   businessModels: BusinessModel[]
 }
 
 class Version {

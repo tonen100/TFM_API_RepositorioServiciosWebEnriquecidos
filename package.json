@@ -29,7 +29,7 @@
     "mongoose": "^5.9.6",
     "node-cache": "^5.1.0",
     "number-to-words": "^1.2.4",
-    "oas2schema.org": "^1.0.5",
+    "oas2schema.org": "^1.1.1",
     "porter-stemmer": "^0.9.1",
     "sinon": "^9.0.2",
     "stopwords": "0.0.9",

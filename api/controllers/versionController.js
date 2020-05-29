@@ -26,11 +26,32 @@ function getLastVersionNotBlacklisted(restAPI) {
     return [restAPI.versions.filter(version => !version.blacklisted).sort((a, b) => b.createdAt - a.createdAt)[0]]
 }
 
-function generateMetadata(version) {
+function generateMetadata(version, restApi) {
     if(version.originalDocumentation) {
         return oas2SchemaOrg.oasConverter.convertToOASv3(version.originalDocumentation, oas2SchemaOrg.oasConverter.extractFormat(version.originalDocumentation)).then(oasDoc => {
+            if(restApi && restApi.logoUrl && !oasDoc['x-logo']) {
+                oasDoc['x-logo'] = { url: restApi.logoUrl };
+            }
+            if(version.urlDoc) {
+                oasDoc['x-documentation-url'] = version.urlDoc;
+            }
+            if(!oasDoc['x-pricing']) {
+                if(version.businessModels && typeof(version.businessModels) == 'object') {
+                    oasDoc['x-pricing'] = [];
+                    version.businessModels.forEach(businessModel => {
+                        oasDoc['x-pricing'].push({ type: businessModel });
+                    });
+                } else if(version.businessModels && typeof(version.businessModels) == 'string') {
+                    oasDoc['x-pricing'] = { type: version.businessModels };
+                } else if(restApi && restApi.metadata && restApi.metadata.businessModels && typeof(restApi.metadata.businessModels) == 'object') {
+                    oasDoc['x-pricing'] = [];
+                    restApi.metadata.businessModels.forEach(businessModel => {
+                        oasDoc['x-pricing'].push({ type: businessModel });
+                    });
+                }
+            }
             version.oasDocumentation = JSON.stringify(oasDoc, null, '\t');
-            return oas2SchemaOrg.convertToMetadata(oasDoc, 'OASv3', { urlAPI: version.urlAPI, urlDoc: version.urlDoc }).then(metadata => {
+            return oas2SchemaOrg.convertToMetadata(oasDoc, 'OASv3', { urlAPI: version.urlAPI }).then(metadata => {
                 version.metadata = metadata;
                 delete version.urlAPI;
                 delete version.urlDoc;
@@ -169,57 +190,62 @@ exports.list_all_restApi_versions = function(req, res) {
 exports.create_a_restApi_version = function(req, res) {
     var api_id = req.params.restApiId;
     var lang = dict.getLang(req);
-    RestApis.findById(api_id, async function (err, restApi) {
-        if (err) {
-          console.error('Error getting data from DB');
-          res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
-        } else {
-            if (restApi) {
-                if (!restApi.versions.find(version => version.number == req.body.number)) {
-                    try {
-                        var newVersion = new Versions(await generateMetadata(req.body));
-                        newVersion.save((err2, version) => {
-                            if(err2) {
-                                if(err2.name=='ValidationError') {
-                                    res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                                } else {
-                                    console.error(dict.get('ErrorCreateDB', lang));
-                                    res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                                }
-                            } else {
-                                restApi.metadata = version.metadata;
-                                restApi.versions.push(version);
-                                restApi.save(async function(err3, newRestApi) {
-                                    if(err3) {
-                                        if(err3.name=='ValidationError') {
-                                            res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                                        }
-                                        else{
-                                            console.error('Error create data in DB');
-                                            res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                                        }
+    if(!req.body) {
+        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+        return;
+    } else {
+        RestApis.findById(api_id, async function (err, restApi) {
+            if (err) {
+              console.error('Error getting data from DB');
+              res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
+            } else {
+                if (restApi) {
+                    if (!restApi.versions.find(version => version.number == req.body.number)) {
+                        try {
+                            var newVersion = new Versions(await generateMetadata(req.body, restApi));
+                            newVersion.save((err2, version) => {
+                                if(err2) {
+                                    if(err2.name=='ValidationError') {
+                                        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
                                     } else {
-                                        var userId = await auth.getUserId(req.headers['authorization']);
-                                        historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version', null, version.number);
-                                        res.status(201).send(version);
-                                        versionsCache.del('list_all_restApi_versions:' + api_id);
+                                        console.error(dict.get('ErrorCreateDB', lang));
+                                        res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                                     }
-                                });
-                            }
-                        });
-                    } catch(errGenerate) {
-                        if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
-                        else res.status(422).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
+                                } else {
+                                    restApi.metadata = version.metadata;
+                                    restApi.versions.push(version);
+                                    restApi.save(async function(err3, newRestApi) {
+                                        if(err3) {
+                                            if(err3.name=='ValidationError') {
+                                                res.status(422).send({ err: dict.get('ErrorSchema', lang) });
+                                            }
+                                            else{
+                                                console.error('Error create data in DB');
+                                                res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
+                                            }
+                                        } else {
+                                            var userId = await auth.getUserId(req.headers['authorization']);
+                                            historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version', null, version.number);
+                                            res.status(201).send(version);
+                                            versionsCache.del('list_all_restApi_versions:' + api_id);
+                                        }
+                                    });
+                                }
+                            });
+                        } catch(errGenerate) {
+                            if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
+                            else res.status(422).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
+                        }
+                    } else {
+                        res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, req.body.number) });
                     }
                 } else {
-                    res.status(422).send({ err: dict.get('ErrorVersionNumberAlreadyUsed', lang, req.body.number) });
+                    console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
+                    res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', api_id) });
                 }
-            } else {
-                console.warn(dict.get('RessourceNotFound', lang, 'restApi', api_id));
-                res.status(404).send({ err: dict.get('RessourceNotFound', lang, 'restApi', api_id) });
             }
-        }
-    });
+        });
+    }
 }
 
 /**
@@ -684,9 +710,10 @@ exports.convert_to_OAS_and_metadata = async function(req, res) {
     pseudoVersion.urlAPI = req.body.urlAPI;
     pseudoVersion.urlDoc = req.body.urlDoc
     try {
-        var generatedPseudoVersion = await generateMetadata(pseudoVersion);
+        var generatedPseudoVersion = await generateMetadata(pseudoVersion, null);
         res.send(generatedPseudoVersion);
     } catch(errGenerate) {
+        console.log(errGenerate)
         if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
         else res.status(424).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
     }
