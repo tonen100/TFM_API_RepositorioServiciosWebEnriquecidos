@@ -102,7 +102,12 @@ exports.list_all_restApis = async function(req, res) {
         res.json(restApis);
         return;
     }
-    if(req.query.providerId && typeof(req.query.providerId) == 'string') filters.provider_id = req.query.providerId;
+    if(req.query.providerId && typeof(req.query.providerId) == 'string') {
+        filters.provider_id = req.query.providerId;
+        restApis = await RestApis.find(filters, { name: 1, logoUrl: 1, 'metadata.description': 1 });
+        res.json(restApis);
+        return;
+    }
     if(req.query.keywords && typeof(req.query.keywords) == 'string') {
         keywords = req.query.keywords.toLowerCase();
         keywords = documentClassifier.remove_stop_words(keywords);
@@ -152,7 +157,6 @@ exports.list_all_restApis = async function(req, res) {
             filters.page = page;
             restApisCache.set(JSON.stringify(filters), restApis);
         } catch (err) {
-            console.log(err);
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         }
     }
@@ -201,7 +205,6 @@ exports.list_most_recents_restApis = async function(req, res) {
         }
     ],  function(err, resAggregate) {
         if (err) {
-            console.log(err);
             res.status(500).send({ err: dict.get('ErrorGetDB', lang) });
         } else if(resAggregate) {
             res.json(resAggregate);

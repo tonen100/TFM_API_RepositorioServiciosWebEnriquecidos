@@ -66,7 +66,6 @@ exports.list_all_users = async function(req, res) {
             filters = {};
             projection = { username: 1, email: 1, role: 1, banned: 1, createdAt: 1 };
         } else {
-            console.log(await auth.getUserRole(token))
             res.status(403).send({ err: dict.get('Forbidden', lang) });
             return;
         }
@@ -522,7 +521,7 @@ exports.delete_a_user = async function(req, res) {
  */
 exports.login_a_user = async function(req, res) {
     var username = req.body.login ? req.body.login : req.body.username;
-    var email = req.body.login ? req.body.login : req.body.username;
+    var email = req.body.login ? req.body.login : req.body.email;
     var password = req.body.password;
     var lang = dict.getLang(req);
     Users.findOne({ $or: [ { username: username }, { email: email } ], banned: false }, function (err, user) {

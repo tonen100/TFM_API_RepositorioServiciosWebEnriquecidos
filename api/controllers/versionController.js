@@ -713,7 +713,6 @@ exports.convert_to_OAS_and_metadata = async function(req, res) {
         var generatedPseudoVersion = await generateMetadata(pseudoVersion, null);
         res.send(generatedPseudoVersion);
     } catch(errGenerate) {
-        console.log(errGenerate)
         if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
         else res.status(424).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
     }
