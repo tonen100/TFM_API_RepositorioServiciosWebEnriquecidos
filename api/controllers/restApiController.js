@@ -43,16 +43,20 @@ function getLastVersion(restAPI) {
  *          required: true
  *          schema:
  *            type: integer
- *            min: 0
+ *            minimum: 0
  *            default: 0
  *        - name: keywords
  *          in: query
  *          description: keywords of the search (use matching score based algorithm on APIs metadata to filter with this parameter)
  *          required: false
+ *          schema:
+ *            type: string
  *        - name: name
  *          in: query
  *          description: Exact name of the API to retrieve
  *          required: false
+ *          schema:
+ *            type: string
  *        - name: providerId
  *          in: query
  *          description: id of the provider who wanna search api for
@@ -263,7 +267,7 @@ exports.list_most_recents_restApis = async function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.create_a_restApi = function(req, res) {
@@ -385,7 +389,7 @@ exports.read_a_restApi = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.edit_a_restApi = function(req, res) {
@@ -476,7 +480,7 @@ exports.edit_a_restApi = function(req, res) {
  *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: RestApi not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -484,7 +488,7 @@ exports.edit_a_restApi = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_restApi_blacklist = function(req, res) {
@@ -558,12 +562,12 @@ exports.handle_restApi_blacklist = function(req, res) {
  *                - $ref: '#/components/schemas/restAPI'
  *        '404':
  *           description: rest API or provider not found
- *           content: Not Found
+ *           content: {}
  *        '500':
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.link_provider_to_api = function(req, res) {
@@ -627,7 +631,7 @@ exports.link_provider_to_api = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.delete_a_restApi = function(req, res) {

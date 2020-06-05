@@ -184,7 +184,7 @@ exports.list_all_restApi_versions = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.create_a_restApi_version = function(req, res) {
@@ -362,7 +362,7 @@ exports.read_a_restApi_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.edit_a_restApi_version = function(req, res) {
@@ -473,7 +473,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *                - $ref: '#/components/schemas/version'
  *        '404':
  *           description: Version not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -481,7 +481,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_restApi_version_blacklist = function(req, res) {
@@ -579,7 +579,7 @@ exports.handle_restApi_version_blacklist = function(req, res) {
  *                - $ref: '#/components/schemas/version'
  *        '404':
  *           description: Version not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -587,7 +587,7 @@ exports.handle_restApi_version_blacklist = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_restApi_version_depreciate = function(req, res) {
@@ -667,7 +667,7 @@ exports.handle_restApi_version_depreciate = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.delete_a_restApi_version = function(req, res) {

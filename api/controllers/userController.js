@@ -32,14 +32,20 @@ var auth = require('./authController')
  *          in: query
  *          description: A boolean describing if all users should be returned (even banned ones). Need Administrator privileges.
  *          required: false
+ *          schema:
+ *            type: string
  *        - name: username
  *          in: query
  *          description: The exact username of the user to retrieve
  *          required: false
+ *          schema:
+ *            type: string
  *        - name: email
  *          in: query
  *          description: The exact email of the user to retrieve
  *          required: false
+ *          schema:
+ *            type: string
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -199,7 +205,7 @@ exports.create_a_contributor = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.create_a_user = function(req, res) {
@@ -314,7 +320,7 @@ exports.read_a_user = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.edit_a_user = async function(req, res) {
@@ -401,7 +407,7 @@ exports.edit_a_user = async function(req, res) {
  *                - $ref: '#/components/schemas/user'
  *        '404':
  *           description: User not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -409,7 +415,7 @@ exports.edit_a_user = async function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_user_banishment = function(req, res) {
@@ -461,7 +467,7 @@ exports.handle_user_banishment = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.delete_a_user = async function(req, res) {

@@ -32,6 +32,8 @@ var dict = new LangDictionnary();
  *          in: query
  *          description: The beginning of the name of the provider to retrieve
  *          required: false
+ *          schema:
+ *            type: string
  *        - $ref: '#/components/parameters/language'
  *      responses:
  *        '200':
@@ -123,7 +125,7 @@ exports.list_all_providers = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.create_a_provider = function(req, res) {
@@ -240,7 +242,7 @@ exports.read_a_provider = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.edit_a_provider = function(req, res) {
@@ -324,7 +326,7 @@ exports.edit_a_provider = function(req, res) {
  *                - $ref: '#/components/schemas/provider'
  *        '404':
  *           description: Provider not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -332,7 +334,7 @@ exports.edit_a_provider = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_provider_blacklist = async function(req, res) {
@@ -397,7 +399,7 @@ exports.handle_provider_blacklist = async function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.delete_a_provider = function(req, res) {
