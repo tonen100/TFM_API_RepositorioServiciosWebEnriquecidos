@@ -9,7 +9,7 @@ const oas2schemaOrg = require('oas2schema.org');
 
 const URL_APIS_GURU = "https://api.apis.guru/v2/list.json";
 const URL_API_RESTAPIMANTICS = "http://localhost:8080/v1";
-// const URL_API_RESTAPIMANTICS = "https://tfm-api-repositorio.herokuapp/v1";
+// const URL_API_RESTAPIMANTICS = "https://tfm-api-repositorio.herokuapp.com/v1";
 
 // Some APIs on top of not beeing valid freeze the all process
 const IGNORE_APIS = [
@@ -125,8 +125,9 @@ async function createApi(api, versions) {
         return;
     }
     await createAndLinkProvider(providerName, newApi);
-    versions.sort((a, b) => a.date_creation.getTime() - b.date_creation.getTime()).forEach(async version => {
-        delete version.date_creation;
+    versions.filter(v => v != null).sort((a, b) => a.date_creation.getTime() - b.date_creation.getTime()).forEach(async version => {
+        if(version.date_creation !== null)
+            delete version.date_creation;
         await createVersion(version, newApi);
     }); 
 }
@@ -237,7 +238,8 @@ async function extractAPIVersions(apiGuruVersions) {
                     
         }
     }
-    return versions;
+    // return versions; // Todas las versiones
+    return [versions.sort((a, b) => b.date_creation - a.date_creation)[0]]; // Unicamente la version la mas reciente
 }
 
 var argv = yargs

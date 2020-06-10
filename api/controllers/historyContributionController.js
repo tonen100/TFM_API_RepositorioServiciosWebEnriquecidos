@@ -58,10 +58,14 @@ async function getContributionNames (historyContributions) {
  *          in: query
  *          description: The id of the contribution to retrieve the history for
  *          required: false
+ *          schema:
+ *             type: string
  *        - name: contributorId
  *          in: query
  *          description: The id of the contributor to retrieve the history for
  *          required: false
+ *          schema:
+ *             type: string
  *        - name: typeContribution
  *          in: query
  *          description: The beginning of the name of the API to retrieve

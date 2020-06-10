@@ -184,7 +184,7 @@ exports.list_all_restApi_versions = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.create_a_restApi_version = function(req, res) {
@@ -203,17 +203,8 @@ exports.create_a_restApi_version = function(req, res) {
                     if (!restApi.versions.find(version => version.number == req.body.number)) {
                         try {
                             var newVersion = new Versions(await generateMetadata(req.body, restApi));
-                            newVersion.save((err2, version) => {
-                                if(err2) {
-                                    if(err2.name=='ValidationError') {
-                                        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                                    } else {
-                                        console.error(dict.get('ErrorCreateDB', lang));
-                                        res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                                    }
-                                } else {
-                                    restApi.metadata = version.metadata;
-                                    restApi.versions.push(version);
+                            restApi.metadata = newVersion.metadata;
+                                    restApi.versions.push(newVersion);
                                     restApi.save(async function(err3, newRestApi) {
                                         if(err3) {
                                             if(err3.name=='ValidationError') {
@@ -224,14 +215,13 @@ exports.create_a_restApi_version = function(req, res) {
                                                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                                             }
                                         } else {
+                                            var version = newRestApi.versions.find(v => v.number == newVersion.number);
                                             var userId = await auth.getUserId(req.headers['authorization']);
                                             historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version', null, version.number);
                                             res.status(201).send(version);
                                             versionsCache.del('list_all_restApi_versions:' + api_id);
                                         }
                                     });
-                                }
-                            });
                         } catch(errGenerate) {
                             if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
                             else res.status(422).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));
@@ -362,7 +352,7 @@ exports.read_a_restApi_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.edit_a_restApi_version = function(req, res) {
@@ -473,7 +463,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *                - $ref: '#/components/schemas/version'
  *        '404':
  *           description: Version not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -481,7 +471,7 @@ exports.edit_a_restApi_version = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_restApi_version_blacklist = function(req, res) {
@@ -579,7 +569,7 @@ exports.handle_restApi_version_blacklist = function(req, res) {
  *                - $ref: '#/components/schemas/version'
  *        '404':
  *           description: Version not found
- *           content: Not Found
+ *           content: {}
  *        '422':
  *           description: Incorrect body
  *           content: {}
@@ -587,7 +577,7 @@ exports.handle_restApi_version_blacklist = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.handle_restApi_version_depreciate = function(req, res) {
@@ -667,7 +657,7 @@ exports.handle_restApi_version_depreciate = function(req, res) {
  *           description: Internal server error
  *           content: {}
  *      security:
- *        firebase:
+ *        - firebase:
  *          - write
  */
 exports.delete_a_restApi_version = function(req, res) {

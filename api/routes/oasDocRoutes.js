@@ -10,20 +10,28 @@ const options = {
     swaggerDefinition: {
       openapi: "3.0.0",
       info: {
-        title: "API Repository",
+        title: "RestAPImantics API",
         version: "1.0.0",
         description:
-          "Documentation API Repository",
+          "RestAPImantics API manages REST APIs that are currently displayed in the web app restapimantics.ml, on top of all related informations (provider...). You can freely use it without any requirements in reading, for most part of it. For modification purposes, just create an account (we will never sell your email address to any mailing list) and start adding RESTfull APIs to the repository through this website or update existing ones (add a new API then add a new version, then link a provider...), but keep in mind that the API uses a firebase autentication system based on custom tokens, so modifications through the web app are much more simple than through the API directly.",
         license: {
           name: "MIT",
           url: "https://choosealicense.com/licenses/mit/"
         },
         contact: {
-          name: "Swagger",
-          url: "https://swagger.io",
-          email: "Info@SmartBear.com"
+          name: "Computer languages and systems department, University of Seville",
+          email: "piegir2@alum.us.es"
         },
       },
+      tags: [
+        {
+          name :"RestApi"
+        }, {
+          name :"Provider"
+        }, {
+          name :"Version"
+        }
+      ],
       components: {
         parameters: {
           language: {
@@ -44,7 +52,6 @@ const options = {
             name: "firebase",
             flows: {
               password: {
-                authorizationUrl: "https://accounts.google.com/o/oauth2/auth",
                 tokenUrl: "http://localhost:8080/v1/login",
                 scopes: {
                   "write":"Edit the API state"
