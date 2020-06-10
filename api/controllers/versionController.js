@@ -203,17 +203,8 @@ exports.create_a_restApi_version = function(req, res) {
                     if (!restApi.versions.find(version => version.number == req.body.number)) {
                         try {
                             var newVersion = new Versions(await generateMetadata(req.body, restApi));
-                            newVersion.save((err2, version) => {
-                                if(err2) {
-                                    if(err2.name=='ValidationError') {
-                                        res.status(422).send({ err: dict.get('ErrorSchema', lang) });
-                                    } else {
-                                        console.error(dict.get('ErrorCreateDB', lang));
-                                        res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
-                                    }
-                                } else {
-                                    restApi.metadata = version.metadata;
-                                    restApi.versions.push(version);
+                            restApi.metadata = newVersion.metadata;
+                                    restApi.versions.push(newVersion);
                                     restApi.save(async function(err3, newRestApi) {
                                         if(err3) {
                                             if(err3.name=='ValidationError') {
@@ -224,14 +215,13 @@ exports.create_a_restApi_version = function(req, res) {
                                                 res.status(500).send({ err: dict.get('ErrorCreateDB', lang) });
                                             }
                                         } else {
+                                            var version = newRestApi.versions.find(v => v.number == newVersion.number);
                                             var userId = await auth.getUserId(req.headers['authorization']);
                                             historyContributions.create_a_historyContribution(version._id, userId, 'ADD', 'Version', null, version.number);
                                             res.status(201).send(version);
                                             versionsCache.del('list_all_restApi_versions:' + api_id);
                                         }
                                     });
-                                }
-                            });
                         } catch(errGenerate) {
                             if(errGenerate.name == "InvalidFormat") res.status(422).send(dict.get('ErrorDocumentationInvalid', lang, errGenerate.message));
                             else res.status(422).send(dict.get('ErrorConvertToMetadataFailed', lang, errGenerate.message));

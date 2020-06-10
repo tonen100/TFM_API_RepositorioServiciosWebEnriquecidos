@@ -125,8 +125,9 @@ async function createApi(api, versions) {
         return;
     }
     await createAndLinkProvider(providerName, newApi);
-    versions.sort((a, b) => a.date_creation.getTime() - b.date_creation.getTime()).forEach(async version => {
-        delete version.date_creation;
+    versions.filter(v => v != null).sort((a, b) => a.date_creation.getTime() - b.date_creation.getTime()).forEach(async version => {
+        if(version.date_creation !== null)
+            delete version.date_creation;
         await createVersion(version, newApi);
     }); 
 }
@@ -237,8 +238,8 @@ async function extractAPIVersions(apiGuruVersions) {
                     
         }
     }
-    return versions; // Todas las versiones
-    // return [versions.sort((a, b) => b.date_creation - a.date_creation)[0]]; // Unicamente la version la mas reciente
+    // return versions; // Todas las versiones
+    return [versions.sort((a, b) => b.date_creation - a.date_creation)[0]]; // Unicamente la version la mas reciente
 }
 
 var argv = yargs
