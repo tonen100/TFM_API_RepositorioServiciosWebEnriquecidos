@@ -680,7 +680,6 @@ exports.delete_a_restApi_version = function(req, res) {
                         console.error('Error removing data from DB');
                         res.status(500).send({ err: dict.get('ErrorDeleteDB', lang) }); // internal server error
                     } else {
-                        Versions.findByIdAndDelete(id);
                         res.sendStatus(204);
                     }
                 });
