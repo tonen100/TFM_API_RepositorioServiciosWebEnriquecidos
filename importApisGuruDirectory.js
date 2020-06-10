@@ -11,9 +11,10 @@ const URL_APIS_GURU = "https://api.apis.guru/v2/list.json";
 const URL_API_RESTAPIMANTICS = "http://localhost:8080/v1";
 // const URL_API_RESTAPIMANTICS = "https://tfm-api-repositorio.herokuapp.com/v1";
 
-// Some APIs on top of not beeing valid freeze the all process
+// Some APIs on top of not beeing valid freeze the all process (or take way too much space)
 const IGNORE_APIS = [
-    'stripe.com'
+    /stripe\.com/,
+    /azure.*/
 ]
 
 let idToken;
@@ -26,6 +27,13 @@ function splitCamelCase(value) {
     .toLowerCase()
     // Uppercases the first character (for camelCase strings)
     .replace(/^./, function(str){ return str.toUpperCase(); })
+}
+
+function toIgnoreAPI(apiId) {
+    for(let id in IGNORE_APIS) {
+        if(apiId.match(IGNORE_APIS[id])) return true;
+    }
+    return false;
 }
 
 async function connect(credentials) {
@@ -55,7 +63,7 @@ async function importAll(list) {
     console.log(Object.keys(list).length + " APIs to load")
     let i = 1;
     for(const apiId of Object.keys(list)) {
-        if(IGNORE_APIS.includes(apiId)) {
+        if(toIgnoreAPI(apiId)) {
             console.warn(i + ": " + apiId + " IGNORED (problematic API)");
         } else {
             const api = extractAPI(list[apiId]);
