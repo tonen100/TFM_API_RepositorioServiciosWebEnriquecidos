@@ -20,13 +20,13 @@ serviceAccount = require('./firebase-config.json');
 // MongoDB URI building
 var mongoDBUser = process.env.MONGO_USER || "admin";
 var mongoDBPass = process.env.MONGO_PASSWORD || "mdp";
-var mongoDBCredentials = (mongoDBUser && mongoDBPass) ? mongoDBUser + ":" + mongoDBPass + "@" : "";
+// var mongoDBCredentials = (mongoDBUser && mongoDBPass) ? mongoDBUser + ":" + mongoDBPass + "@" : "";
 
-var mongoDBHostname = process.env.mongoDBHostname || "localhost";
-var mongoDBPort = process.env.mongoDBPort || "27017";
-var mongoDBName = process.env.mongoDBName || "API_Repository";
+var mongoDBHostname = process.env.MONGO_HOSTNAME || "localhost";
+var mongoDBPort = process.env.MONGO_PORT || "27017";
+var mongoDBName = process.env.MONGO_DB_NAME || "API_Repository";
 
-var mongoDBURI = process.env.MONGO_URL ||"mongodb://" + mongoDBCredentials + mongoDBHostname + ":" + mongoDBPort + "/" + mongoDBName;
+var mongoDBURI = process.env.MONGO_URL ||"mongodb://" + mongoDBHostname + ":" + mongoDBPort + "/" + mongoDBName;
  
 mongoose.connect(mongoDBURI, {
     reconnectTries: 10,

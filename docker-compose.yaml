@@ -1,0 +1,36 @@
+version: '3'
+services:
+    api-restapimantics:
+        build: .
+        container_name: api-restapimantics-${NODE_ENV}
+        ports:
+            - "127.0.0.1:${PORT}:${PORT}"
+        depends_on:
+            - mongo
+        restart: on-failure
+        environment:
+            - URL_APP=${URL_API}
+            - MONGO_HOSTNAME=mongo
+            - MONGO_PORT=${DBPORT}
+            - MONGO_DB_NAME=API_Repository
+            - VIRTUAL_HOST=api.${VIRTUAL_HOST}
+            - VIRTUAL_PORT=${PORT}
+    front-restapimantics:
+        build: ${ROOT_FRONT}
+        ports:
+            - "${FRONT_PORT}:4000"
+        depends_on:
+            - api-restapimantics
+        restart: on-failure
+        environment:
+            - VIRTUAL_HOST=${VIRTUAL_HOST}
+            - VIRTUAL_PORT=${PORT}
+    mongo:
+        image: "mongo"
+        expose:
+            - "${DBPORT}"
+        command: --port ${DBPORT}
+networks:
+    default:
+        external:
+            name: service-tier

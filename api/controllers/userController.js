@@ -77,7 +77,7 @@ exports.list_all_users = async function(req, res) {
         }
     } else {
         filters = req.query.username ? { username: req.query.username } : (req.query.email ? { email: req.query.email } : { banned: false });
-        projection = { password: 0 };
+        projection = { password: 0, passwordConfirm: 0 };
     }
     Users.find(filters, projection, function(err, users) {
         if(err) {
@@ -262,7 +262,7 @@ exports.create_a_user = function(req, res) {
 exports.read_a_user = function(req, res) {
     var id = req.params.userId;
     var lang = dict.getLang(req);
-    Users.findById(id, { password: 0 }, function (err, user) {
+    Users.findById(id, { password: 0, passwordConfirm: 0 }, function (err, user) {
         if (err) {
           console.error('Error getting data from DB');
           res.status(500).send({ err: dict.get('ErrorGetDB', lang) }); // internal server error
@@ -333,7 +333,7 @@ exports.edit_a_user = async function(req, res) {
     } else if (!updatedUser) {
         res.status(422).send({ err: dict.get('ErrorSchema', lang) });
     } else {
-        Users.findById(id, { password: 0 }, function(err, user) {
+        Users.findById(id, { password: 0, passwordConfirm: 0 }, function(err, user) {
             if (err) {
                 console.error('Error getting data from DB');
                 res.status(500).send({ err: dict.get('ErrorGetDB', lang) }) // internal server error
