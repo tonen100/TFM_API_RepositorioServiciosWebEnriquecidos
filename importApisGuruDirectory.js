@@ -14,7 +14,7 @@ const URL_API_RESTAPIMANTICS = "http://localhost:8080/v1";
 // Some APIs on top of not beeing valid freeze the all process (or take way too much space)
 const IGNORE_APIS = [
     /stripe\.com/,
-    /azure.*/
+    // /azure.*/
 ]
 
 let idToken;

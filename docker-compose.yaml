@@ -1,8 +1,7 @@
 version: '3'
 services:
-    api-restapimantics:
-        build: .
-        container_name: api-restapimantics-${NODE_ENV}
+    api:
+        image: tonen100/api-restapimantics
         ports:
             - "127.0.0.1:${PORT}:${PORT}"
         depends_on:
@@ -15,12 +14,12 @@ services:
             - MONGO_DB_NAME=API_Repository
             - VIRTUAL_HOST=api.${VIRTUAL_HOST}
             - VIRTUAL_PORT=${PORT}
-    front-restapimantics:
-        build: ${ROOT_FRONT}
+    front:
+        image: tonen100/front-restapimantics
         ports:
             - "${FRONT_PORT}:4000"
         depends_on:
-            - api-restapimantics
+            - api
         restart: on-failure
         environment:
             - VIRTUAL_HOST=${VIRTUAL_HOST}
@@ -30,7 +29,3 @@ services:
         expose:
             - "${DBPORT}"
         command: --port ${DBPORT}
-networks:
-    default:
-        external:
-            name: service-tier
