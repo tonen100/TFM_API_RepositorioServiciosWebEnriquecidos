@@ -2,20 +2,22 @@ version: '3'
 services:
     api:
         image: tonen100/api-restapimantics
-        ports:
-            - "127.0.0.1:${PORT}:${PORT}"
         depends_on:
             - mongo
         restart: on-failure
+        ports:
+            - "8080:8080"
         environment:
             - URL_APP=${URL_API}
             - MONGO_HOSTNAME=mongo
-            - MONGO_PORT=${DBPORT}
+            - MONGO_PORT=${DB_PORT}
             - MONGO_DB_NAME=API_Repository
             - VIRTUAL_HOST=api.${VIRTUAL_HOST}
             - VIRTUAL_PORT=${PORT}
     front:
         image: tonen100/front-restapimantics
+        expose:
+            - "${FRONT_PORT}"
         ports:
             - "${FRONT_PORT}:4000"
         depends_on:
@@ -23,9 +25,11 @@ services:
         restart: on-failure
         environment:
             - VIRTUAL_HOST=${VIRTUAL_HOST}
-            - VIRTUAL_PORT=${PORT}
+            - VIRTUAL_PORT=${FRONT_PORT}
     mongo:
         image: "mongo"
-        expose:
-            - "${DBPORT}"
-        command: --port ${DBPORT}
+        command: --port ${DB_PORT}
+networks:
+    default:
+        external:
+            name: restapimantics
